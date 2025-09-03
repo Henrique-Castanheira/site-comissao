@@ -3,97 +3,216 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Cálculo de Comissão</title>
+  <title>Calculadora de Comissão Profissional</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #ff6b00, #8e44ad, #d63384);
-      color: white;
+    :root {
+      --primary: #8e44ad;
+      --secondary: #ff6b00;
+      --accent: #d63384;
+      --dark: #2c3e50;
+      --light: #f8f9fa;
+      --success: #28a745;
+      --warning: #ffc107;
+      --danger: #dc3545;
+      --gray: #6c757d;
+      --border-radius: 12px;
+      --box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+      --transition: all 0.3s ease;
+    }
+
+    * {
       margin: 0;
       padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #ff6b00, #8e44ad, #d63384);
+      color: var(--dark);
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: center;
-      min-height: 100vh;
       flex-direction: column;
     }
 
     .container {
       background: white;
-      padding: 30px;
-      border-radius: 10px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-      max-width: 500px;
+      padding: 35px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      max-width: 550px;
       width: 100%;
       text-align: center;
-      margin-bottom: 20px;
-      color: #003366;
+      margin-bottom: 25px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 5px;
+      background: linear-gradient(90deg, var(--secondary), var(--primary), var(--accent));
+    }
+
+    .logo {
+      background-image: url(logo.png);
+      width: 180px;
+      height: 60px;
+      background-repeat: no-repeat;
+      background-size: contain;
+      background-position: center;
+      margin: 0 auto 25px auto;
     }
 
     h1 {
+      margin-bottom: 25px;
+      color: var(--primary);
+      font-size: 28px;
+      font-weight: 700;
+      position: relative;
+      padding-bottom: 10px;
+    }
+
+    h1::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 60px;
+      height: 3px;
+      background: var(--secondary);
+      border-radius: 3px;
+    }
+
+    .form-group {
       margin-bottom: 20px;
-      color: #8e44ad;
-      font-size: 24px;
+      text-align: left;
     }
 
     label {
       display: block;
-      text-align: left;
-      margin-bottom: 5px;
-      font-weight: bold;
-      color: #6c3483;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: var(--dark);
+      font-size: 15px;
     }
 
     select, input[type="number"], button {
       width: 100%;
-      padding: 12px;
-      margin-bottom: 15px;
-      border-radius: 6px;
-      border: 1px solid #ccc;
+      padding: 14px 16px;
+      border-radius: var(--border-radius);
+      border: 1px solid #ddd;
       font-size: 16px;
+      transition: var(--transition);
+    }
+
+    select:focus, input[type="number"]:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(142, 68, 173, 0.2);
+    }
+
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%238e44ad' viewBox='0 0 16 16'%3E%3Cpath d='M8 12L2 6h12L8 12z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 16px center;
+      background-size: 16px;
+      appearance: none;
     }
 
     button {
-      background-color: #ff6b00;
+      background: linear-gradient(to right, var(--secondary), var(--accent));
       color: white;
       border: none;
       cursor: pointer;
-      font-weight: bold;
+      font-weight: 600;
       text-transform: uppercase;
-      transition: background-color 0.3s ease;
+      letter-spacing: 0.5px;
+      padding: 16px;
+      margin-top: 10px;
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
     }
 
     button:hover {
-      background-color: #d63384;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 15px rgba(214, 51, 132, 0.4);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button i {
+      margin-right: 8px;
     }
 
     .resultado {
-      margin-top: 20px;
+      margin-top: 25px;
       text-align: left;
-      color: #003366;
-      padding: 15px;
-      background-color: #f8f9fa;
-      border-radius: 6px;
-      border-left: 4px solid #8e44ad;
+      padding: 20px;
+      background-color: var(--light);
+      border-radius: var(--border-radius);
+      border-left: 4px solid var(--primary);
+      animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     .resultado p {
-      margin: 8px 0;
+      margin: 10px 0;
       font-size: 16px;
+      display: flex;
+      justify-content: space-between;
     }
 
-    strong {
-      color: #ff6b00;
+    .resultado .label {
+      font-weight: 500;
+      color: var(--dark);
     }
 
-    footer {
-      margin-top: 20px;
-      text-align: center;
-      color: #f1f1f1;
+    .resultado .value {
+      font-weight: 600;
+    }
+
+    .success-text {
+      color: var(--success);
+    }
+
+    .warning-text {
+      color: var(--warning);
+    }
+
+    .danger-text {
+      color: var(--danger);
+    }
+
+    .primary-text {
+      color: var(--primary);
     }
 
     .additional-input {
       display: none;
+      animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+      from { opacity: 0; max-height: 0; }
+      to { opacity: 1; max-height: 100px; }
     }
 
     .show {
@@ -101,59 +220,252 @@
     }
 
     .checkbox-container {
-      text-align: left;
-      margin-bottom: 15px;
-      color: #003366;
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
     }
 
     .checkbox-container input {
       width: auto;
       margin-right: 10px;
+      accent-color: var(--primary);
     }
 
-    .danger {
-      color: #dc3545;
+    .info-tooltip {
+      display: inline-block;
+      margin-left: 8px;
+      color: var(--gray);
+      cursor: help;
+      position: relative;
     }
 
-    .success {
-      color: #28a745;
+    .info-tooltip:hover::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 8px 12px;
+      background: var(--dark);
+      color: white;
+      border-radius: 4px;
+      font-size: 12px;
+      width: 200px;
+      z-index: 100;
     }
-    .logo{
-      background-image: url(logo.png);
-      width: 150px;
-      height: 50px;
-      background-repeat: no-repeat;
-      background-size: contain;
-      background-position: center;
-      margin: 0 auto 20px auto ;
 
+    footer {
+      margin-top: 20px;
+      text-align: center;
+      color: white;
+      font-size: 14px;
+      opacity: 0.9;
+    }
+
+    footer a {
+      color: white;
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+      color: var(--secondary);
+    }
+
+    .summary-card {
+      background: linear-gradient(135deg, var(--primary), #6c3483);
+      color: white;
+      border-radius: var(--border-radius);
+      padding: 20px;
+      margin-top: 20px;
+      text-align: center;
+    }
+
+    .summary-card h3 {
+      margin-bottom: 15px;
+      font-size: 18px;
+    }
+
+    .summary-amount {
+      font-size: 28px;
+      font-weight: 700;
+      margin: 10px 0;
+    }
+
+    /* Estilos para a área de contato */
+    .contact-button {
+      background: transparent;
+      border: 2px solid white;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 50px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: var(--transition);
+      margin-top: 15px;
+    }
+
+    .contact-button:hover {
+      background: white;
+      color: var(--primary);
+    }
+
+    .contact-modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .contact-modal.show {
+      display: flex;
+      opacity: 1;
+    }
+
+    .contact-content {
+      background: white;
+      padding: 30px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      max-width: 500px;
+      width: 90%;
+      position: relative;
+      transform: translateY(-20px);
+      transition: transform 0.3s ease;
+    }
+
+    .contact-modal.show .contact-content {
+      transform: translateY(0);
+    }
+
+    .close-button {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background: none;
+      border: none;
+      font-size: 24px;
+      color: var(--gray);
+      cursor: pointer;
+      width: auto;
+      padding: 0;
+    }
+
+    .close-button:hover {
+      color: var(--danger);
+    }
+
+    .contact-info {
+      margin-top: 20px;
+    }
+
+    .contact-item {
+      display: flex;
+      align-items: center;
+      margin-bottom: 15px;
+      padding: 12px;
+      background: var(--light);
+      border-radius: var(--border-radius);
+      transition: var(--transition);
+    }
+
+    .contact-item:hover {
+      transform: translateX(5px);
+      background: #e9ecef;
+    }
+
+    .contact-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--primary);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-right: 15px;
+      font-size: 18px;
+    }
+
+    .contact-text {
+      flex: 1;
+      text-align: left;
+    }
+
+    .contact-text a {
+      color: var(--dark);
+      text-decoration: none;
+      transition: var(--transition);
+    }
+
+    .contact-text a:hover {
+      color: var(--primary);
+    }
+
+    @media (max-width: 576px) {
+      .container {
+        padding: 25px 20px;
+      }
+      
+      h1 {
+        font-size: 24px;
+      }
+      
+      select, input[type="number"], button {
+        padding: 12px 14px;
+      }
+      
+      .contact-content {
+        padding: 20px 15px;
+      }
     }
   </style>
 </head>
 <body>
   <div class="container">
     <div class="logo"></div>
-    <h1>Simulador de Prêmio</h1>
-    <label for="cargo">Tipo de vendedor:</label>
-    <select id="cargo" required onchange="toggleAdditionalInputs()">
-      <option value="" disabled selected>-- Escolha --</option>
-      <option value="consultor1">Consultor I PAP</option>
-      <option value="consultor2">Consultor II PAP</option>
-      <option value="lider">Líder PAP</option>
-    </select>
+    <h1>Calculadora de Comissão</h1>
+    
+    <div class="form-group">
+      <label for="cargo">Tipo de Vendedor:</label>
+      <select id="cargo" required onchange="toggleAdditionalInputs()">
+        <option value="" disabled selected>-- Selecione o cargo --</option>
+        <option value="consultor1">Consultor I PAP</option>
+        <option value="consultor2">Consultor II PAP</option>
+        <option value="lider">Líder PAP</option>
+      </select>
+    </div>
 
-    <div id="receita-container">
-      <label for="receita">Valor da receita (R$):</label>
+    <div id="receita-container" class="form-group">
+      <label for="receita">
+        Valor da Receita (R$)
+        <span class="info-tooltip" data-tooltip="Valor total das vendas realizadas">ⓘ</span>
+      </label>
       <input type="number" id="receita" placeholder="0,00" min="0" step="0.01" />
     </div>
 
-    <div id="meta-qtd-container" class="additional-input">
-      <label for="meta-qtd">Meta (quantidade de vendas):</label>
+    <div id="meta-qtd-container" class="form-group additional-input">
+      <label for="meta-qtd">
+        Meta de Quantidade
+        <span class="info-tooltip" data-tooltip="Número de vendas estabelecido como meta">ⓘ</span>
+      </label>
       <input type="number" id="meta-qtd" placeholder="0" min="1" />
     </div>
 
-    <div id="vendas-qtd-container" class="additional-input">
-      <label for="vendas-qtd">Quantidade de vendas realizadas:</label>
+    <div id="vendas-qtd-container" class="form-group additional-input">
+      <label for="vendas-qtd">
+        Vendas Realizadas
+        <span class="info-tooltip" data-tooltip="Quantidade de vendas efetivamente realizadas">ⓘ</span>
+      </label>
       <input type="number" id="vendas-qtd" placeholder="0" min="0" />
     </div>
 
@@ -162,9 +474,69 @@
       <label for="vendeu-plano">Vendeu plano móvel?</label>
     </div>
 
-    <button onclick="calcularComissao()">Calcular Prêmio</button>
+    <button onclick="calcularComissao()">
+      <i class="fas fa-calculator"></i> Calcular Comissão
+    </button>
 
     <div class="resultado" id="resultado"></div>
+  </div>
+
+  <footer>
+    <p>Desenvolvido por <a href="#" onclick="openContactModal()">Henrique Oliveira</a> &copy; 2025</p>
+    <button class="contact-button" onclick="openContactModal()">
+      <i class="fas fa-envelope"></i> Entrar em Contato
+    </button>
+  </footer>
+
+  <!-- Modal de Contato -->
+  <div class="contact-modal" id="contactModal">
+    <div class="contact-content">
+      <button class="close-button" onclick="closeContactModal()">&times;</button>
+      <h2><i class="fas fa-code"></i> Desenvolvimento Web</h2>
+      <p>Entre em contato para criar seu site profissional</p>
+      
+      <div class="contact-info">
+        <div class="contact-item">
+          <div class="contact-icon">
+            <i class="fas fa-user"></i>
+          </div>
+          <div class="contact-text">
+            <strong>Henrique Oliveira</strong>
+            <p>Desenvolvedor Web</p>
+          </div>
+        </div>
+        
+        <div class="contact-item">
+          <div class="contact-icon">
+            <i class="fas fa-envelope"></i>
+          </div>
+          <div class="contact-text">
+            <strong>E-mail</strong>
+            <p><a href="mailto:henriquee.castoliveira@gmail.com">henriquee.castoliveira@gmail.com</a></p>
+          </div>
+        </div>
+        
+        <div class="contact-item">
+          <div class="contact-icon">
+            <i class="fas fa-phone"></i>
+          </div>
+          <div class="contact-text">
+            <strong>Telefone/WhatsApp</strong>
+            <p><a href="https://wa.me/5519995952057" target="_blank">+55 19 99595-2057</a></p>
+          </div>
+        </div>
+        
+        <div class="contact-item">
+          <div class="contact-icon">
+            <i class="fas fa-laptop-code"></i>
+          </div>
+          <div class="contact-text">
+            <strong>Serviços</strong>
+            <p>Sites responsivos, aplicações web e muito mais</p>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -198,7 +570,11 @@
       let percentualAtingido = 0;
 
       if (!cargo) {
-        document.getElementById("resultado").innerHTML = "<p class='danger'><strong>Selecione um tipo de vendedor.</strong></p>";
+        document.getElementById("resultado").innerHTML = `
+          <p class="danger-text">
+            <i class="fas fa-exclamation-circle"></i> 
+            <strong>Selecione um tipo de vendedor.</strong>
+          </p>`;
         return;
       }
 
@@ -219,7 +595,11 @@
       // Cálculo para Consultor I
       if (cargo === "consultor1") {
         if (receita <= 0) {
-          document.getElementById("resultado").innerHTML = "<p class='danger'><strong>Informe um valor de receita válido.</strong></p>";
+          document.getElementById("resultado").innerHTML = `
+            <p class="danger-text">
+              <i class="fas fa-exclamation-circle"></i> 
+              <strong>Informe um valor de receita válido.</strong>
+            </p>`;
           return;
         }
         
@@ -231,19 +611,29 @@
         if (!vendeuPlano) comissaoTotal *= 0.8;
 
         resultadoHTML = `
-          <p><strong>Tipo:</strong> Consultor I PAP</p>
-          <p><strong>Receita:</strong> R$ ${receita.toFixed(2).replace(".", ",")}</p>
-          <p><strong>Fator:</strong> ${fator}%</p>
-          <p><strong>Previsão total de premio:</strong> R$ ${comissaoVenda.toFixed(2).replace(".", ",")}</p>
-          ${!vendeuPlano ? '<p class="danger"><strong>Desconto de 20%:</strong> (não vendeu plano móvel)</p>' : ''}
-          <p class="success"><strong>Previsão de prêmio:</strong> R$ ${comissaoTotal.toFixed(2).replace(".", ",")}</p>
+          <div class="summary-card">
+            <h3>Previsão de Comissão</h3>
+            <div class="summary-amount">R$ ${comissaoTotal.toFixed(2).replace(".", ",")}</div>
+            <p>Consultor I PAP</p>
+          </div>
+          <p><span class="label">Receita:</span> <span class="value">R$ ${receita.toFixed(2).replace(".", ",")}</span></p>
+          <p><span class="label">Fator de Comissão:</span> <span class="value">${(fator * 100).toFixed(0)}%</span></p>
+          <p><span class="label">Comissão Base:</span> <span class="value">R$ ${comissaoVenda.toFixed(2).replace(".", ",")}</span></p>
+          ${!vendeuPlano ? 
+            `<p class="danger-text"><span class="label"><i class="fas fa-info-circle"></i> Ajuste:</span> <span class="value">-20% (sem venda de plano)</span></p>` : 
+            `<p class="success-text"><span class="label"><i class="fas fa-check-circle"></i> Status:</span> <span class="value">Plano móvel vendido</span></p>`
+          }
         `;
       }
 
       // Cálculo para Consultor II
       else if (cargo === "consultor2") {
         if (receita <= 0 || metaQuantidade <= 0 || vendasQuantidade < 0) {
-          document.getElementById("resultado").innerHTML = "<p class='danger'><strong>Preencha todos os campos corretamente.</strong></p>";
+          document.getElementById("resultado").innerHTML = `
+            <p class="danger-text">
+              <i class="fas fa-exclamation-circle"></i> 
+              <strong>Preencha todos os campos corretamente.</strong>
+            </p>`;
           return;
         }
 
@@ -254,19 +644,20 @@
         comissaoVenda = receita * fator;
 
         // Cálculo do bônus da equipe baseado na quantidade de vendas
+        let statusMeta = "";
         if (percentualAtingido < 85) {
           comissaoEquipe = 0;
-          resultadoHTML += `<p class="danger"><strong>Status meta:</strong> Não atingida (${percentualAtingido.toFixed(2)}%)</p>`;
+          statusMeta = `<p class="danger-text"><span class="label"><i class="fas fa-times-circle"></i> Status Meta:</span> <span class="value">Não atingida (${percentualAtingido.toFixed(2)}%)</span></p>`;
         }
         else if (percentualAtingido < 100) {
           comissaoEquipe = 250; // R$ 250 para 85%-99,99%
-          resultadoHTML += `<p><strong>Status meta:</strong> ${percentualAtingido.toFixed(2)}% (bônus parcial)</p>`;
+          statusMeta = `<p class="warning-text"><span class="label"><i class="fas fa-exclamation-triangle"></i> Status Meta:</span> <span class="value">Parcial (${percentualAtingido.toFixed(2)}%)</span></p>`;
         }
         else {
           comissaoEquipe = 450; // R$ 450 base para ≥100%
           const adicional = Math.floor((Math.min(percentualAtingido, 140) - 100) / 5);
           comissaoEquipe += adicional * 100; // R$ 100 a cada 5% adicional
-          resultadoHTML += `<p class="success"><strong>Status meta:</strong> ${percentualAtingido.toFixed(2)}% (meta atingida ou superada)</p>`;
+          statusMeta = `<p class="success-text"><span class="label"><i class="fas fa-check-circle"></i> Status Meta:</span> <span class="value">Atingida (${percentualAtingido.toFixed(2)}%)</span></p>`;
         }
 
         comissaoTotal = comissaoVenda + comissaoEquipe;
@@ -275,23 +666,33 @@
         if (!vendeuPlano) comissaoTotal *= 0.8;
 
         resultadoHTML = `
-          <p><strong>Tipo:</strong> Consultor II PAP</p>
-          <p><strong>Receita:</strong> R$ ${receita.toFixed(2).replace(".", ",")}</p>
-          <p><strong>Fator:</strong> ${fator}%</p>
-          <p><strong>Premio por venda:</strong> R$ ${comissaoVenda.toFixed(2).replace(".", ",")}</p>
-          <p><strong>Meta de quantidade:</strong> ${metaQuantidade} vendas</p>
-          <p><strong>Vendas realizadas:</strong> ${vendasQuantidade} vendas</p>
-          ${resultadoHTML}
-          <p><strong>Bônus da equipe:</strong> R$ ${comissaoEquipe.toFixed(2).replace(".", ",")}</p>
-          ${!vendeuPlano ? '<p class="danger"><strong>Desconto de 20%:</strong> (não vendeu plano móvel)</p>' : ''}
-          <p class="success"><strong>Total previsão de prêmio:</strong> R$ ${comissaoTotal.toFixed(2).replace(".", ",")}</p>
+          <div class="summary-card">
+            <h3>Previsão de Comissão</h3>
+            <div class="summary-amount">R$ ${comissaoTotal.toFixed(2).replace(".", ",")}</div>
+            <p>Consultor II PAP</p>
+          </div>
+          <p><span class="label">Receita:</span> <span class="value">R$ ${receita.toFixed(2).replace(".", ",")}</span></p>
+          <p><span class="label">Fator de Comissão:</span> <span class="value">${(fator * 100).toFixed(0)}%</span></p>
+          <p><span class="label">Comissão por Vendas:</span> <span class="value">R$ ${comissaoVenda.toFixed(2).replace(".", ",")}</span></p>
+          <p><span class="label">Meta de Quantidade:</span> <span class="value">${metaQuantidade} vendas</span></p>
+          <p><span class="label">Vendas Realizadas:</span> <span class="value">${vendasQuantidade} vendas</span></p>
+          ${statusMeta}
+          <p><span class="label">Bônus de Equipe:</span> <span class="value">R$ ${comissaoEquipe.toFixed(2).replace(".", ",")}</span></p>
+          ${!vendeuPlano ? 
+            `<p class="danger-text"><span class="label"><i class="fas fa-info-circle"></i> Ajuste:</span> <span class="value">-20% (sem venda de plano)</span></p>` : 
+            `<p class="success-text"><span class="label"><i class="fas fa-check-circle"></i> Status:</span> <span class="value">Plano móvel vendido</span></p>`
+          }
         `;
       }
 
       // Cálculo para Líder PAP (mesmos campos do Consultor II, mas com regras diferentes)
       else if (cargo === "lider") {
         if (metaQuantidade <= 0 || vendasQuantidade < 0) {
-          document.getElementById("resultado").innerHTML = "<p class='danger'><strong>Preencha todos os campos corretamente.</strong></p>";
+          document.getElementById("resultado").innerHTML = `
+            <p class="danger-text">
+              <i class="fas fa-exclamation-circle"></i> 
+              <strong>Preencha todos os campos corretamente.</strong>
+            </p>`;
           return;
         }
 
@@ -299,40 +700,69 @@
         percentualAtingido = (vendasQuantidade / metaQuantidade) * 100;
         
         // Regras específicas para Líder conforme a imagem
+        let statusMeta = "";
         if (percentualAtingido < 85) {
           comissaoTotal = 0;
-          resultadoHTML += `<p class="danger"><strong>Status meta:</strong> Não atingida (${percentualAtingido.toFixed(2)}%)</p>`;
+          statusMeta = `<p class="danger-text"><span class="label"><i class="fas fa-times-circle"></i> Status Meta:</span> <span class="value">Não atingida (${percentualAtingido.toFixed(2)}%)</span></p>`;
         }
         else if (percentualAtingido < 100) {
           comissaoTotal = 600; // R$ 600 para 85%-99,99%
-          resultadoHTML += `<p><strong>Status meta:</strong> ${percentualAtingido.toFixed(2)}% (bônus parcial)</p>`;
+          statusMeta = `<p class="warning-text"><span class="label"><i class="fas fa-exclamation-triangle"></i> Status Meta:</span> <span class="value">Parcial (${percentualAtingido.toFixed(2)}%)</span></p>`;
         }
         else {
           comissaoTotal = 1000; // R$ 1000 base para ≥100%
           const adicional = Math.floor((Math.min(percentualAtingido, 140) - 100) / 5);
           comissaoTotal += adicional * 200; // R$ 200 a cada 5% adicional
-          resultadoHTML += `<p class="success"><strong>Status meta:</strong> ${percentualAtingido.toFixed(2)}% (meta atingida ou superada)</p>`;
+          statusMeta = `<p class="success-text"><span class="label"><i class="fas fa-check-circle"></i> Status Meta:</span> <span class="value">Atingida (${percentualAtingido.toFixed(2)}%)</span></p>`;
         }
 
-        // Líder não tem desconto por não vender chip (checkbox está oculto)
-
         resultadoHTML = `
-          <p><strong>Tipo:</strong> Líder PAP</p>
-          <p><strong>Meta de quantidade:</strong> ${metaQuantidade} vendas</p>
-          <p><strong>Vendas realizadas:</strong> ${vendasQuantidade} vendas</p>
-          <p><strong>Atingimento:</strong> ${percentualAtingido.toFixed(2)}%</p>
-          ${resultadoHTML}
-          <p class="success"><strong>Total:</strong> R$ ${comissaoTotal.toFixed(2).replace(".", ",")}</p>
+          <div class="summary-card">
+            <h3>Previsão de Comissão</h3>
+            <div class="summary-amount">R$ ${comissaoTotal.toFixed(2).replace(".", ",")}</div>
+            <p>Líder PAP</p>
+          </div>
+          <p><span class="label">Meta de Quantidade:</span> <span class="value">${metaQuantidade} vendas</span></p>
+          <p><span class="label">Vendas Realizadas:</span> <span class="value">${vendasQuantidade} vendas</span></p>
+          <p><span class="label">Percentual de Atingimento:</span> <span class="value">${percentualAtingido.toFixed(2)}%</span></p>
+          ${statusMeta}
         `;
       }
 
       document.getElementById("resultado").innerHTML = resultadoHTML;
     }
 
+    // Funções para o modal de contato
+    function openContactModal() {
+      document.getElementById('contactModal').classList.add('show');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeContactModal() {
+      document.getElementById('contactModal').classList.remove('show');
+      document.body.style.overflow = 'auto';
+    }
+
+    // Fechar o modal clicando fora dele
+    document.getElementById('contactModal').addEventListener('click', function(e) {
+      if (e.target === this) {
+        closeContactModal();
+      }
+    });
+
     document.addEventListener('DOMContentLoaded', function() {
       toggleAdditionalInputs();
+      
+      // Adicionar event listeners para os inputs
+      document.querySelectorAll('input').forEach(input => {
+        input.addEventListener('focus', function() {
+          this.parentElement.classList.add('focused');
+        });
+        input.addEventListener('blur', function() {
+          this.parentElement.classList.remove('focused');
+        });
+      });
     });
   </script>
-  <footer><p>Desenvolvido por Henrique Oliveira</p></footer>
 </body>
 </html>
