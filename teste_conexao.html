@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Teste Conexão Supabase</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    body { font-family: monospace; background: #0f0f0f; color: #e0e0e0; padding: 24px; }
+    h2 { color: #a78bfa; margin-bottom: 20px; }
+    .step { margin-bottom: 16px; padding: 14px 18px; border-radius: 10px; background: #1a1a1a; border-left: 4px solid #333; }
+    .step.ok      { border-color: #22c55e; }
+    .step.erro    { border-color: #ef4444; }
+    .step.aguard  { border-color: #f59e0b; }
+    .label { font-size: 12px; color: #888; margin-bottom: 6px; }
+    .msg   { font-size: 14px; word-break: break-all; }
+    .msg.ok    { color: #4ade80; }
+    .msg.erro  { color: #f87171; }
+    .msg.aguard{ color: #fcd34d; }
+    button {
+      margin-top: 20px; padding: 14px 28px;
+      background: linear-gradient(135deg,#7c3aed,#db2777);
+      border: none; border-radius: 10px; color: #fff;
+      font-family: monospace; font-size: 14px; font-weight: 700;
+      cursor: pointer;
+    }
+    pre { background:#111; padding:12px; border-radius:8px; font-size:12px; overflow-x:auto; color:#a3e635; margin-top:8px; }
+  </style>
+</head>
+<body>
+  <h2>🔌 Diagnóstico Supabase · Terra Fibra</h2>
+
+  <div class="step aguard" id="s1">
+    <div class="label">PASSO 1 · Inicialização do cliente</div>
+    <div class="msg aguard" id="m1">Aguardando...</div>
+  </div>
+
+  <div class="step aguard" id="s2">
+    <div class="label">PASSO 2 · Ping na tabela <code>usuarios</code></div>
+    <div class="msg aguard" id="m2">Aguardando...</div>
+  </div>
+
+  <div class="step aguard" id="s3">
+    <div class="label">PASSO 3 · Chamada RPC <code>verificar_login()</code></div>
+    <div class="msg aguard" id="m3">Aguardando...</div>
+  </div>
+
+  <div class="step aguard" id="s4">
+    <div class="label">PASSO 4 · Login com CPF 000.000.000-00 / terra123</div>
+    <div class="msg aguard" id="m4">Aguardando...</div>
+    <pre id="p4" style="display:none"></pre>
+  </div>
+
+  <button onclick="rodarTestes()">▶ Rodar diagnóstico</button>
+
+  <script>
+    const URL  = 'https://xfjhbqyynbpozrpvvbxq.supabase.co';
+    const KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqamhicXl5bmJwb3pycHZ2YnhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYwNTQ3NDEsImV4cCI6MjA2MTYzMDc0MX0.V93ekdLb4LWZnXmQuQWY1A_u7pqIsFw';
+
+    function set(id, cls, msg, pre) {
+      const s = document.getElementById('s'+id);
+      const m = document.getElementById('m'+id);
+      s.className = 'step ' + cls;
+      m.className = 'msg ' + cls;
+      m.textContent = msg;
+      if (pre !== undefined) {
+        const p = document.getElementById('p'+id);
+        if (p) { p.style.display='block'; p.textContent = JSON.stringify(pre, null, 2); }
+      }
+    }
+
+    async function rodarTestes() {
+      // PASSO 1 — cliente
+      let db;
+      try {
+        const { createClient } = supabase;
+        db = createClient(URL, KEY);
+        set(1, 'ok', '✅ Cliente Supabase inicializado com sucesso.');
+      } catch(e) {
+        set(1, 'erro', '❌ Falha ao inicializar: ' + e.message);
+        return;
+      }
+
+      // PASSO 2 — tabela usuarios
+      try {
+        const { data, error } = await db.from('usuarios').select('id, nome, cpf, cargo').limit(5);
+        if (error) {
+          if (error.code === '42P01')
+            set(2, 'erro', '❌ Tabela "usuarios" não existe. Execute o supabase_setup.sql!', error);
+          else if (error.code === 'PGRST301')
+            set(2, 'erro', '❌ RLS bloqueando acesso. Verifique as políticas.', error);
+          else
+            set(2, 'erro', '❌ Erro: ' + error.message + ' (code: ' + error.code + ')', error);
+        } else {
+          set(2, 'ok', `✅ Tabela encontrada! ${data.length} usuário(s) retornado(s).`, data);
+        }
+      } catch(e) {
+        set(2, 'erro', '❌ Exceção: ' + e.message);
+      }
+
+      // PASSO 3 — RPC existe?
+      try {
+        const { data, error } = await db.rpc('verificar_login', { p_cpf: 'teste', p_senha: 'teste' });
+        if (error) {
+          if (error.code === '42883' || error.code === 'PGRST202')
+            set(3, 'erro', '❌ Função verificar_login() não existe. Execute o supabase_setup.sql!', error);
+          else
+            set(3, 'aguard', '⚠️ Função existe mas retornou erro (esperado com credenciais falsas): ' + error.message, error);
+        } else {
+          set(3, 'ok', '✅ Função RPC encontrada e respondeu.');
+        }
+      } catch(e) {
+        set(3, 'erro', '❌ Exceção: ' + e.message);
+      }
+
+      // PASSO 4 — login real
+      try {
+        const { data, error } = await db.rpc('verificar_login', {
+          p_cpf: '000.000.000-00',
+          p_senha: 'terra123'
+        });
+        if (error) {
+          set(4, 'erro', '❌ Erro no login: ' + error.message, error);
+        } else if (!data || data.length === 0) {
+          set(4, 'erro', '❌ Usuário não encontrado. O INSERT do setup foi executado?', data);
+        } else {
+          set(4, 'ok', '✅ LOGIN OK! Usuário: ' + data[0].nome + ' · Cargo: ' + data[0].cargo, data[0]);
+        }
+      } catch(e) {
+        set(4, 'erro', '❌ Exceção: ' + e.message);
+      }
+    }
+  </script>
+</body>
+</html>
