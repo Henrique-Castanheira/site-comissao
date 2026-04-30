@@ -1,768 +1,1090 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Calculadora de Comissão Profissional</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <title>Terra Fibra · Calculadora RV</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
+    /* ══════════════ RESET & VARS ══════════════ */
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
     :root {
-      --primary: #8e44ad;
-      --secondary: #ff6b00;
-      --accent: #d63384;
-      --dark: #2c3e50;
-      --light: #f8f9fa;
-      --success: #28a745;
-      --warning: #ffc107;
-      --danger: #dc3545;
-      --gray: #6c757d;
-      --border-radius: 12px;
-      --box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-      --transition: all 0.3s ease;
+      --bg:          #08050F;
+      --card:        #110D1C;
+      --card2:       #160F24;
+      --border:      rgba(139,92,246,.18);
+      --border-hi:   rgba(139,92,246,.45);
+      --purple:      #7C3AED;
+      --purple-l:    #A78BFA;
+      --pink:        #DB2777;
+      --orange:      #EA580C;
+      --text:        #EDE9FE;
+      --muted:       #7C6F8E;
+      --success:     #22C55E;
+      --warning:     #F59E0B;
+      --danger:      #EF4444;
+      --r:           14px;
+      --r-lg:        20px;
     }
 
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    html { scroll-behavior: smooth; }
 
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(135deg, #ff6b00, #8e44ad, #d63384);
-      color: var(--dark);
-      margin: 0;
-      padding: 20px;
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      flex-direction: column;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100dvh;
+      overflow-x: hidden;
     }
 
-    .container {
-      background: white;
-      padding: 35px;
-      border-radius: var(--border-radius);
-      box-shadow: var(--box-shadow);
-      max-width: 550px;
-      width: 100%;
-      text-align: center;
-      margin-bottom: 25px;
-      position: relative;
-      overflow: hidden;
+    /* aura de fundo */
+    body::after {
+      content:'';
+      position:fixed; inset:0; pointer-events:none; z-index:0;
+      background:
+        radial-gradient(ellipse 70% 55% at 10%  0%, rgba(124,58,237,.30) 0%, transparent 60%),
+        radial-gradient(ellipse 55% 45% at 95% 95%, rgba(234,88,12,.18)  0%, transparent 55%),
+        radial-gradient(ellipse 45% 35% at 55% 45%, rgba(219,39,119,.09) 0%, transparent 55%);
     }
 
-    .container::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 5px;
-      background: linear-gradient(90deg, var(--secondary), var(--primary), var(--accent));
+    /* ══════════════ UTILITÁRIOS ══════════════ */
+    .hidden { display:none !important; }
+
+    /* ══════════════ LOGIN ══════════════ */
+    #login-screen {
+      position:fixed; inset:0; z-index:200;
+      display:flex; align-items:center; justify-content:center;
+      padding:20px;
+      background: var(--bg);
     }
 
-    .logo {
-      background-image: url(logo.png);
-      width: 180px;
-      height: 60px;
-      background-repeat: no-repeat;
-      background-size: contain;
-      background-position: center;
-      margin: 0 auto 25px auto;
+    .login-wrap {
+      position:relative; z-index:1;
+      width:100%; max-width:390px;
     }
 
-    h1 {
-      margin-bottom: 25px;
-      color: var(--primary);
-      font-size: 28px;
-      font-weight: 700;
-      position: relative;
-      padding-bottom: 10px;
+    /* marca d'água */
+    .login-wrap::before {
+      content:'RV';
+      position:absolute;
+      top:-40px; right:-20px;
+      font-size:130px; font-weight:900;
+      color:rgba(124,58,237,.06);
+      letter-spacing:-6px;
+      pointer-events:none; user-select:none;
     }
 
-    h1::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 60px;
-      height: 3px;
-      background: var(--secondary);
-      border-radius: 3px;
+    .l-card {
+      background: var(--card);
+      border:1px solid var(--border);
+      border-radius:24px;
+      padding:36px 28px 32px;
+      box-shadow: 0 40px 80px rgba(0,0,0,.55), 0 0 0 1px rgba(124,58,237,.08);
     }
 
-    .form-group {
-      margin-bottom: 20px;
-      text-align: left;
+    /* logo */
+    .l-logo {
+      display:flex; align-items:center; gap:10px;
+      margin-bottom:6px;
+    }
+    .l-logo-mark {
+      width:40px; height:40px; border-radius:11px;
+      background:linear-gradient(135deg,#EA580C,#7C3AED,#DB2777);
+      display:flex; align-items:center; justify-content:center;
+      font-size:18px; font-weight:900; color:#fff;
+      box-shadow:0 4px 14px rgba(124,58,237,.45);
+    }
+    .l-logo-text {
+      font-size:24px; font-weight:900;
+      background:linear-gradient(90deg,#fff 30%,#C4B5FD);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    }
+    .l-logo-sub { font-size:11px; color:var(--muted); margin-bottom:28px; }
+
+    .l-title { font-size:20px; font-weight:800; margin-bottom:4px; }
+    .l-desc  { font-size:13px; color:var(--muted); margin-bottom:28px; }
+
+    /* campos */
+    .l-field { margin-bottom:14px; }
+    .l-field label {
+      display:block; font-size:11px; font-weight:700;
+      text-transform:uppercase; letter-spacing:.09em;
+      color:var(--muted); margin-bottom:8px;
+    }
+    .l-field-wrap { position:relative; }
+    .l-field-wrap .fi {
+      position:absolute; left:14px; top:50%; transform:translateY(-50%);
+      font-size:15px; pointer-events:none;
+    }
+    .l-field-wrap input {
+      width:100%; padding:14px 14px 14px 42px;
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(139,92,246,.2);
+      border-radius:12px; outline:none;
+      color:var(--text); font-family:inherit; font-size:15px; font-weight:500;
+      transition:border-color .2s, box-shadow .2s;
+    }
+    .l-field-wrap input:focus {
+      border-color:var(--purple-l);
+      box-shadow:0 0 0 3px rgba(124,58,237,.14);
+    }
+    .l-field-wrap input::placeholder { color:rgba(124,111,142,.45); font-weight:400; }
+
+    /* botão login */
+    .l-btn {
+      width:100%; padding:16px;
+      background:linear-gradient(135deg,var(--purple),var(--pink));
+      border:none; border-radius:12px;
+      color:#fff; font-family:inherit; font-size:15px; font-weight:700;
+      cursor:pointer; margin-top:6px;
+      transition:transform .15s, opacity .2s;
+      position:relative; overflow:hidden;
+    }
+    .l-btn::after { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(255,255,255,.12),transparent); }
+    .l-btn:active { transform:scale(.98); opacity:.9; }
+    .l-btn:disabled { opacity:.6; cursor:not-allowed; }
+
+    /* loader spinner inline */
+    .l-btn .spinner {
+      display:inline-block; width:16px; height:16px;
+      border:2px solid rgba(255,255,255,.3);
+      border-top-color:#fff; border-radius:50%;
+      animation:spin .6s linear infinite;
+      vertical-align:middle; margin-right:8px;
     }
 
-    label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: 600;
-      color: var(--dark);
-      font-size: 15px;
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    /* erro */
+    .l-error {
+      margin-top:12px; padding:12px 16px;
+      background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.25);
+      border-radius:10px; color:#FCA5A5; font-size:13px;
+      display:none; align-items:center; gap:8px;
+    }
+    .l-error.show { display:flex; }
+
+    .l-footer-note {
+      text-align:center; margin-top:20px;
+      font-size:11px; color:rgba(124,111,142,.5);
     }
 
-    select, input[type="number"], button {
-      width: 100%;
-      padding: 14px 16px;
-      border-radius: var(--border-radius);
-      border: 1px solid #ddd;
-      font-size: 16px;
-      transition: var(--transition);
+    /* ══════════════ APP ══════════════ */
+    #app { display:none; position:relative; z-index:1; min-height:100dvh; }
+
+    /* HEADER */
+    .app-header {
+      position:sticky; top:0; z-index:50;
+      background:rgba(8,5,15,.82); backdrop-filter:blur(20px);
+      border-bottom:1px solid var(--border);
+    }
+    .header-inner {
+      max-width:500px; margin:0 auto;
+      height:58px; padding:0 18px;
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .h-logo { display:flex; align-items:center; gap:8px; }
+    .h-logo-mark {
+      width:30px; height:30px; border-radius:8px;
+      background:linear-gradient(135deg,#EA580C,#7C3AED);
+      display:flex; align-items:center; justify-content:center;
+      font-size:13px; font-weight:900; color:#fff;
+    }
+    .h-logo-text {
+      font-size:17px; font-weight:900;
+      background:linear-gradient(90deg,#fff,#C4B5FD);
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    }
+    .h-right { display:flex; align-items:center; gap:8px; }
+    .h-user {
+      display:flex; align-items:center; gap:6px;
+      padding:5px 11px;
+      background:rgba(124,58,237,.12); border:1px solid rgba(124,58,237,.22);
+      border-radius:20px; font-size:12px; font-weight:600; color:#C4B5FD;
+    }
+    .h-logout {
+      background:none; border:none; color:var(--muted);
+      cursor:pointer; padding:6px; border-radius:8px;
+      font-size:17px; transition:color .2s;
+    }
+    .h-logout:hover { color:var(--danger); }
+
+    /* MAIN */
+    .app-main {
+      max-width:500px; margin:0 auto;
+      padding:24px 16px 110px;
     }
 
-    select:focus, input[type="number"]:focus {
-      outline: none;
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(142, 68, 173, 0.2);
+    /* SEÇÃO HERO */
+    .hero { margin-bottom:22px; }
+    .hero h1 { font-size:22px; font-weight:900; letter-spacing:-.02em; }
+    .hero p  { font-size:12px; color:var(--muted); margin-top:3px; }
+
+    /* CARD GENÉRICO */
+    .card {
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:var(--r-lg);
+      padding:20px 18px;
+      margin-bottom:14px;
     }
 
-    select {
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%238e44ad' viewBox='0 0 16 16'%3E%3Cpath d='M8 12L2 6h12L8 12z'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 16px center;
-      background-size: 16px;
-      appearance: none;
+    .sec-label {
+      font-size:11px; font-weight:700;
+      text-transform:uppercase; letter-spacing:.09em;
+      color:var(--muted); margin-bottom:14px;
+      display:flex; align-items:center; gap:6px;
+    }
+    .sec-label .dot {
+      width:5px; height:5px; border-radius:50%;
+      background:var(--purple-l); flex-shrink:0;
     }
 
-    button {
-      background: linear-gradient(to right, var(--secondary), var(--accent));
-      color: white;
-      border: none;
-      cursor: pointer;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      padding: 16px;
-      margin-top: 10px;
-      transition: var(--transition);
-      position: relative;
-      overflow: hidden;
+    /* TABS DE CARGO */
+    .role-grid {
+      display:grid; grid-template-columns:repeat(3,1fr); gap:8px;
+    }
+    .role-btn {
+      padding:13px 6px;
+      background:rgba(255,255,255,.03);
+      border:1px solid rgba(255,255,255,.07);
+      border-radius:12px;
+      color:var(--muted); font-family:inherit;
+      font-size:11px; font-weight:700;
+      cursor:pointer; text-align:center; line-height:1.3;
+      transition:all .2s;
+    }
+    .role-btn .ri { font-size:20px; display:block; margin-bottom:5px; }
+    .role-btn.active {
+      background:rgba(124,58,237,.16);
+      border-color:rgba(139,92,246,.55);
+      color:var(--text);
+      box-shadow:0 0 18px rgba(124,58,237,.18);
     }
 
-    button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 15px rgba(214, 51, 132, 0.4);
+    /* INPUT GROUP */
+    .igroup { margin-bottom:14px; }
+    .igroup label {
+      display:block; font-size:11px; font-weight:700;
+      text-transform:uppercase; letter-spacing:.07em;
+      color:var(--muted); margin-bottom:7px;
+    }
+    .iwrap { position:relative; }
+    .ipfx {
+      position:absolute; left:13px; top:50%; transform:translateY(-50%);
+      font-size:13px; font-weight:700; color:var(--muted); pointer-events:none;
+    }
+    .iwrap input {
+      width:100%; padding:13px 13px 13px 35px;
+      background:rgba(255,255,255,.04);
+      border:1px solid rgba(139,92,246,.18);
+      border-radius:12px; outline:none;
+      color:var(--text); font-family:inherit;
+      font-size:16px; font-weight:700;
+      transition:border-color .2s, box-shadow .2s;
+    }
+    .iwrap input.no-pfx { padding-left:13px; }
+    .iwrap input:focus {
+      border-color:var(--purple-l);
+      box-shadow:0 0 0 3px rgba(124,58,237,.12);
+    }
+    .iwrap input::placeholder { color:rgba(124,111,142,.35); font-weight:400; }
+
+    /* QUALIDADE PILLS */
+    .q-grid {
+      display:grid; grid-template-columns:repeat(4,1fr); gap:7px;
+    }
+    .q-pill {
+      padding:11px 4px; text-align:center;
+      background:rgba(255,255,255,.03);
+      border:1px solid rgba(255,255,255,.07);
+      border-radius:10px; cursor:pointer;
+      transition:all .2s;
+    }
+    .q-pill .ql { font-size:11px; font-weight:700; color:var(--muted); display:block; }
+    .q-pill .qb { font-size:13px; font-weight:800; color:var(--muted); display:block; margin-top:2px; }
+    .q-pill.active {
+      background:rgba(34,197,94,.1);
+      border-color:rgba(34,197,94,.32);
+    }
+    .q-pill.active .ql,
+    .q-pill.active .qb { color:#4ADE80; }
+
+    /* BOTÃO CALCULAR */
+    .btn-calc {
+      width:100%; padding:18px;
+      background:linear-gradient(135deg,#7C3AED,#DB2777,#EA580C);
+      background-size:200% 200%;
+      animation:gradShift 5s ease infinite;
+      border:none; border-radius:14px;
+      color:#fff; font-family:inherit;
+      font-size:15px; font-weight:800;
+      cursor:pointer; letter-spacing:.02em;
+      transition:transform .15s, opacity .2s;
+      position:relative; overflow:hidden;
+      margin-bottom:22px;
+    }
+    .btn-calc::after { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(255,255,255,.12),transparent); }
+    .btn-calc:active { transform:scale(.98); opacity:.9; }
+
+    @keyframes gradShift {
+      0%,100% { background-position:0% 50%; }
+      50%      { background-position:100% 50%; }
     }
 
-    button:active {
-      transform: translateY(0);
+    /* ══ RESULTADO ══ */
+    #resultado { display:none; }
+
+    .res-hero {
+      background:linear-gradient(135deg,rgba(124,58,237,.4),rgba(219,39,119,.25));
+      border:1px solid rgba(139,92,246,.35);
+      border-radius:var(--r-lg); padding:26px 22px;
+      text-align:center; margin-bottom:12px;
+      position:relative; overflow:hidden;
+      animation: fadeUp .4s ease;
+    }
+    .res-hero::before {
+      content:''; position:absolute;
+      top:-40px; right:-40px; width:130px; height:130px;
+      background:rgba(124,58,237,.18); border-radius:50%;
+      filter:blur(30px);
     }
 
-    button i {
-      margin-right: 8px;
+    .res-badge {
+      display:inline-block; padding:4px 14px;
+      background:rgba(255,255,255,.1); border-radius:20px;
+      font-size:11px; font-weight:700; color:#C4B5FD;
+      margin-bottom:14px; letter-spacing:.04em; text-transform:uppercase;
+    }
+    .res-lbl { font-size:11px; font-weight:600; color:rgba(237,233,254,.5); text-transform:uppercase; letter-spacing:.1em; }
+    .res-val {
+      font-size:46px; font-weight:900; color:#fff;
+      letter-spacing:-.03em; line-height:1; margin:6px 0;
+    }
+    .res-val small { font-size:22px; font-weight:700; color:#A78BFA; margin-right:4px; }
+    .res-sub { font-size:12px; color:rgba(167,139,250,.6); }
+
+    /* BREAKDOWN */
+    .bk-card {
+      background:var(--card); border:1px solid var(--border);
+      border-radius:var(--r-lg); overflow:hidden;
+      margin-bottom:12px; animation:fadeUp .4s .05s ease both;
+    }
+    .bk-title {
+      padding:13px 18px;
+      font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.09em;
+      color:var(--muted); border-bottom:1px solid rgba(139,92,246,.1);
+    }
+    .bk-row {
+      display:flex; align-items:center;
+      justify-content:space-between;
+      padding:13px 18px;
+      border-bottom:1px solid rgba(255,255,255,.03);
+      font-size:13px;
+    }
+    .bk-row:last-child { border-bottom:none; }
+    .bk-lbl { color:var(--muted); font-weight:500; display:flex; align-items:center; gap:8px; }
+    .bk-val { font-weight:800; color:var(--text); }
+    .bk-val.s { color:#4ADE80; }
+    .bk-val.w { color:#FCD34D; }
+    .bk-val.d { color:#F87171; }
+    .bk-val.a { color:#A78BFA; }
+
+    /* BARRA DE PROGRESSO */
+    .prog-wrap { padding:14px 18px; border-top:1px solid rgba(139,92,246,.1); }
+    .prog-labels { display:flex; justify-content:space-between; font-size:11px; color:var(--muted); margin-bottom:7px; }
+    .prog-bg { height:6px; background:rgba(255,255,255,.07); border-radius:10px; overflow:hidden; }
+    .prog-fill { height:100%; border-radius:10px; background:linear-gradient(90deg,var(--purple),var(--pink)); transition:width .6s ease; }
+
+    /* INFO BOX */
+    .info-box {
+      padding:13px 16px;
+      background:rgba(124,58,237,.08);
+      border:1px solid rgba(139,92,246,.2);
+      border-radius:12px; font-size:12px; color:#C4B5FD; line-height:1.6;
+      margin-bottom:12px; animation:fadeUp .4s .1s ease both;
     }
 
-    .resultado {
-      margin-top: 25px;
-      text-align: left;
-      padding: 20px;
-      background-color: var(--light);
-      border-radius: var(--border-radius);
-      border-left: 4px solid var(--primary);
-      animation: fadeIn 0.5s ease;
+    /* HISTÓRICO */
+    .hist-card {
+      background:var(--card); border:1px solid var(--border);
+      border-radius:var(--r-lg); overflow:hidden;
+      animation:fadeUp .4s .15s ease both;
+    }
+    .hist-header {
+      padding:14px 18px; display:flex; align-items:center; justify-content:space-between;
+      border-bottom:1px solid rgba(139,92,246,.1);
+    }
+    .hist-header span { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.09em; color:var(--muted); }
+    .hist-header button {
+      font-size:11px; font-weight:700; color:var(--purple-l);
+      background:none; border:none; cursor:pointer; padding:4px 8px;
+      border-radius:6px; transition:background .2s;
+    }
+    .hist-header button:hover { background:rgba(124,58,237,.12); }
+
+    .hist-list { max-height:320px; overflow-y:auto; }
+    .hist-item {
+      padding:13px 18px;
+      border-bottom:1px solid rgba(255,255,255,.03);
+      display:flex; align-items:center; justify-content:space-between;
+      cursor:pointer; transition:background .15s;
+    }
+    .hist-item:hover { background:rgba(255,255,255,.02); }
+    .hist-item:last-child { border-bottom:none; }
+    .hi-left .hi-cargo  { font-size:12px; font-weight:700; color:var(--text); }
+    .hi-left .hi-data   { font-size:11px; color:var(--muted); margin-top:2px; }
+    .hi-right .hi-rv    { font-size:14px; font-weight:800; color:#A78BFA; }
+    .hist-empty { padding:24px; text-align:center; font-size:13px; color:var(--muted); }
+
+    /* FOOTER */
+    .app-footer {
+      position:fixed; bottom:0; left:0; right:0;
+      padding:10px 20px 18px;
+      background:rgba(8,5,15,.88); backdrop-filter:blur(20px);
+      border-top:1px solid var(--border);
+      text-align:center; font-size:11px; color:rgba(124,111,142,.45);
+    }
+    .app-footer a { color:rgba(167,139,250,.55); text-decoration:none; }
+
+    /* TOAST */
+    .toast {
+      position:fixed; bottom:80px; left:50%; transform:translateX(-50%) translateY(20px);
+      padding:12px 20px; border-radius:40px;
+      background:rgba(26,16,40,.95); border:1px solid var(--border);
+      font-size:13px; font-weight:600; color:var(--text);
+      white-space:nowrap; opacity:0;
+      transition:opacity .3s, transform .3s;
+      z-index:300; backdrop-filter:blur(10px);
+      pointer-events:none;
+    }
+    .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+    @keyframes fadeUp {
+      from { opacity:0; transform:translateY(14px); }
+      to   { opacity:1; transform:translateY(0); }
     }
 
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .resultado p {
-      margin: 10px 0;
-      font-size: 16px;
-      display: flex;
-      justify-content: space-between;
-    }
-
-    .resultado .label {
-      font-weight: 500;
-      color: var(--dark);
-    }
-
-    .resultado .value {
-      font-weight: 600;
-    }
-
-    .success-text {
-      color: var(--success);
-    }
-
-    .warning-text {
-      color: var(--warning);
-    }
-
-    .danger-text {
-      color: var(--danger);
-    }
-
-    .primary-text {
-      color: var(--primary);
-    }
-
-    .additional-input {
-      display: none;
-      animation: slideDown 0.3s ease;
-    }
-
-    @keyframes slideDown {
-      from { opacity: 0; max-height: 0; }
-      to { opacity: 1; max-height: 100px; }
-    }
-
-    .show {
-      display: block;
-    }
-
-    .checkbox-container {
-      display: flex;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-
-    .checkbox-container input {
-      width: auto;
-      margin-right: 10px;
-      accent-color: var(--primary);
-    }
-
-    .info-tooltip {
-      display: inline-block;
-      margin-left: 8px;
-      color: var(--gray);
-      cursor: help;
-      position: relative;
-    }
-
-    .info-tooltip:hover::after {
-      content: attr(data-tooltip);
-      position: absolute;
-      bottom: 100%;
-      left: 50%;
-      transform: translateX(-50%);
-      padding: 8px 12px;
-      background: var(--dark);
-      color: white;
-      border-radius: 4px;
-      font-size: 12px;
-      width: 200px;
-      z-index: 100;
-    }
-
-    footer {
-      margin-top: 20px;
-      text-align: center;
-      color: white;
-      font-size: 14px;
-      opacity: 0.9;
-    }
-
-    footer a {
-      color: white;
-      text-decoration: none;
-      transition: var(--transition);
-    }
-
-    footer a:hover {
-      text-decoration: underline;
-      color: var(--secondary);
-    }
-
-    .summary-card {
-      background: linear-gradient(135deg, var(--primary), #6c3483);
-      color: white;
-      border-radius: var(--border-radius);
-      padding: 20px;
-      margin-top: 20px;
-      text-align: center;
-    }
-
-    .summary-card h3 {
-      margin-bottom: 15px;
-      font-size: 18px;
-    }
-
-    .summary-amount {
-      font-size: 28px;
-      font-weight: 700;
-      margin: 10px 0;
-    }
-
-    /* Estilos para a área de contato */
-    .contact-button {
-      background: transparent;
-      border: 2px solid white;
-      color: white;
-      padding: 10px 20px;
-      border-radius: 50px;
-      font-size: 14px;
-      cursor: pointer;
-      transition: var(--transition);
-      margin-top: 15px;
-    }
-
-    .contact-button:hover {
-      background: white;
-      color: var(--primary);
-    }
-
-    .contact-modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.7);
-      z-index: 1000;
-      justify-content: center;
-      align-items: center;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-
-    .contact-modal.show {
-      display: flex;
-      opacity: 1;
-    }
-
-    .contact-content {
-      background: white;
-      padding: 30px;
-      border-radius: var(--border-radius);
-      box-shadow: var(--box-shadow);
-      max-width: 500px;
-      width: 90%;
-      position: relative;
-      transform: translateY(-20px);
-      transition: transform 0.3s ease;
-    }
-
-    .contact-modal.show .contact-content {
-      transform: translateY(0);
-    }
-
-    .close-button {
-      position: absolute;
-      top: 15px;
-      right: 15px;
-      background: none;
-      border: none;
-      font-size: 24px;
-      color: var(--gray);
-      cursor: pointer;
-      width: auto;
-      padding: 0;
-    }
-
-    .close-button:hover {
-      color: var(--danger);
-    }
-
-    .contact-info {
-      margin-top: 20px;
-    }
-
-    .contact-item {
-      display: flex;
-      align-items: center;
-      margin-bottom: 15px;
-      padding: 12px;
-      background: var(--light);
-      border-radius: var(--border-radius);
-      transition: var(--transition);
-    }
-
-    .contact-item:hover {
-      transform: translateX(5px);
-      background: #e9ecef;
-    }
-
-    .contact-icon {
-      width: 40px;
-      height: 40px;
-      background: var(--primary);
-      color: white;
-      border-radius: 50%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin-right: 15px;
-      font-size: 18px;
-    }
-
-    .contact-text {
-      flex: 1;
-      text-align: left;
-    }
-
-    .contact-text a {
-      color: var(--dark);
-      text-decoration: none;
-      transition: var(--transition);
-    }
-
-    .contact-text a:hover {
-      color: var(--primary);
-    }
-
-    @media (max-width: 576px) {
-      .container {
-        padding: 25px 20px;
-      }
-      
-      h1 {
-        font-size: 24px;
-      }
-      
-      select, input[type="number"], button {
-        padding: 12px 14px;
-      }
-      
-      .contact-content {
-        padding: 20px 15px;
-      }
+    @media (min-width:520px) {
+      .app-main { padding:30px 24px 100px; }
+      .res-val  { font-size:52px; }
+      .hero h1  { font-size:26px; }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="logo"></div>
-    <h1>Calculadora de Comissão</h1>
-    
-    <div class="form-group">
-      <label for="cargo">Tipo de Vendedor:</label>
-      <select id="cargo" required onchange="toggleAdditionalInputs()">
-        <option value="" disabled selected>-- Selecione o cargo --</option>
-        <option value="consultor1">Consultor I PAP</option>
-        <option value="consultor2">Consultor II PAP</option>
-        <option value="lider">Líder PAP</option>
-      </select>
+
+<!-- ═══════════════ LOGIN ═══════════════ -->
+<div id="login-screen">
+  <div class="login-wrap">
+    <div class="l-card">
+      <div class="l-logo">
+        <div class="l-logo-mark">T</div>
+        <span class="l-logo-text">terra</span>
+      </div>
+      <p class="l-logo-sub">conectado por VIVO FIBRA</p>
+
+      <h2 class="l-title">Bem-vindo de volta 👋</h2>
+      <p class="l-desc">Acesse sua calculadora de comissão</p>
+
+      <div class="l-field">
+        <label>CPF</label>
+        <div class="l-field-wrap">
+          <span class="fi">🪪</span>
+          <input type="text" id="l-cpf" placeholder="000.000.000-00" maxlength="14" inputmode="numeric" autocomplete="off"/>
+        </div>
+      </div>
+
+      <div class="l-field">
+        <label>Senha</label>
+        <div class="l-field-wrap">
+          <span class="fi">🔒</span>
+          <input type="password" id="l-senha" placeholder="••••••••" autocomplete="current-password"/>
+        </div>
+      </div>
+
+      <button class="l-btn" id="l-btn-entrar" onclick="fazerLogin()">Entrar na conta</button>
+
+      <div class="l-error" id="l-error">⚠️ <span id="l-error-msg">CPF ou senha incorretos.</span></div>
+
+      <p class="l-footer-note">Uso interno · Terra Fibra &copy; 2026</p>
     </div>
-
-    <div id="receita-container" class="form-group">
-      <label for="receita">
-        Valor da Receita (R$)
-        <span class="info-tooltip" data-tooltip="Valor total das vendas realizadas">ⓘ</span>
-      </label>
-      <input type="number" id="receita" placeholder="0,00" min="0" step="0.01" />
-    </div>
-
-    <div id="meta-qtd-container" class="form-group additional-input">
-      <label for="meta-qtd">
-        Meta de Quantidade
-        <span class="info-tooltip" data-tooltip="Número de vendas estabelecido como meta">ⓘ</span>
-      </label>
-      <input type="number" id="meta-qtd" placeholder="0" min="1" />
-    </div>
-
-    <div id="vendas-qtd-container" class="form-group additional-input">
-      <label for="vendas-qtd">
-        Vendas Realizadas
-        <span class="info-tooltip" data-tooltip="Quantidade de vendas efetivamente realizadas">ⓘ</span>
-      </label>
-      <input type="number" id="vendas-qtd" placeholder="0" min="0" />
-    </div>
-
-    <div id="plano-container" class="checkbox-container">
-      <input type="checkbox" id="vendeu-plano" checked>
-      <label for="vendeu-plano">Vendeu plano móvel?</label>
-    </div>
-
-    <button onclick="calcularComissao()">
-      <i class="fas fa-calculator"></i> Calcular Comissão
-    </button>
-
-    <div class="resultado" id="resultado"></div>
   </div>
+</div>
 
-  <footer>
-    <p>Desenvolvido por <a href="#" onclick="openContactModal()">Henrique Oliveira</a> &copy; 2025</p>
-    <button class="contact-button" onclick="openContactModal()">
-      <i class="fas fa-envelope"></i> Entrar em Contato
-    </button>
-  </footer>
+<!-- ═══════════════ APP ═══════════════ -->
+<div id="app">
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="h-logo">
+        <div class="h-logo-mark">T</div>
+        <span class="h-logo-text">terra</span>
+      </div>
+      <div class="h-right">
+        <div class="h-user">👤 <span id="h-nome">—</span></div>
+        <button class="h-logout" onclick="sair()" title="Sair">⎋</button>
+      </div>
+    </div>
+  </header>
 
-  <!-- Modal de Contato -->
-  <div class="contact-modal" id="contactModal">
-    <div class="contact-content">
-      <button class="close-button" onclick="closeContactModal()">&times;</button>
-      <h2><i class="fas fa-code"></i> Desenvolvimento Web</h2>
-      <p>Entre em contato para criar seu site profissional</p>
-      
-      <div class="contact-info">
-        <div class="contact-item">
-          <div class="contact-icon">
-            <i class="fas fa-user"></i>
-          </div>
-          <div class="contact-text">
-            <strong>Henrique Oliveira</strong>
-            <p>Desenvolvedor Web</p>
-          </div>
+  <main class="app-main">
+
+    <!-- HERO -->
+    <div class="hero">
+      <h1>Calculadora de RV ✦</h1>
+      <p>Vigência Março/2026 · Canal PAP</p>
+    </div>
+
+    <!-- CARGO -->
+    <div class="card">
+      <div class="sec-label"><span class="dot"></span>Seu cargo</div>
+      <div class="role-grid">
+        <button class="role-btn active" onclick="setCargo('consultor1',this)">
+          <span class="ri">🏃</span>Consultor I
+        </button>
+        <button class="role-btn" onclick="setCargo('consultor2',this)">
+          <span class="ri">⭐</span>Consultor II
+        </button>
+        <button class="role-btn" onclick="setCargo('lider',this)">
+          <span class="ri">👑</span>Líder PAP
+        </button>
+      </div>
+    </div>
+
+    <!-- CAMPOS -->
+    <div class="card" id="campos-card">
+
+      <!-- Receita -->
+      <div class="igroup" id="g-receita">
+        <label>Receita instalada no mês</label>
+        <div class="iwrap"><span class="ipfx">R$</span>
+          <input type="number" id="receita" placeholder="0,00" min="0" step="0.01" inputmode="decimal"/>
         </div>
-        
-        <div class="contact-item">
-          <div class="contact-icon">
-            <i class="fas fa-envelope"></i>
-          </div>
-          <div class="contact-text">
-            <strong>E-mail</strong>
-            <p><a href="mailto:henriquee.castoliveira@gmail.com">henriquee.castoliveira@gmail.com</a></p>
-          </div>
+      </div>
+
+      <!-- Meta quantidade -->
+      <div class="igroup hidden" id="g-meta">
+        <label>Meta de quantidade</label>
+        <div class="iwrap">
+          <input type="number" id="meta-qtd" placeholder="Ex: 20" min="1" class="no-pfx" inputmode="numeric"/>
         </div>
-        
-        <div class="contact-item">
-          <div class="contact-icon">
-            <i class="fas fa-phone"></i>
-          </div>
-          <div class="contact-text">
-            <strong>Telefone/WhatsApp</strong>
-            <p><a href="https://wa.me/5519995952057" target="_blank">+55 19 99595-2057</a></p>
-          </div>
+      </div>
+
+      <!-- Vendas realizadas -->
+      <div class="igroup hidden" id="g-vendas">
+        <label>Vendas realizadas</label>
+        <div class="iwrap">
+          <input type="number" id="vendas-qtd" placeholder="Ex: 22" min="0" class="no-pfx" inputmode="numeric"/>
         </div>
-        
-        <div class="contact-item">
-          <div class="contact-icon">
-            <i class="fas fa-laptop-code"></i>
+      </div>
+
+      <!-- Acelerador de Qualidade -->
+      <div id="g-qualidade">
+        <div class="sec-label" style="margin-top:4px;margin-bottom:10px;">
+          <span class="dot" style="background:#22C55E"></span>Índice de Qualidade
+        </div>
+        <div class="q-grid">
+          <div class="q-pill"           onclick="setQ(0,   this)"><span class="ql">≤80%</span><span class="qb">+0%</span></div>
+          <div class="q-pill active"    onclick="setQ(.05, this)"><span class="ql">&gt;80%</span><span class="qb">+5%</span></div>
+          <div class="q-pill"           onclick="setQ(.07, this)"><span class="ql">&gt;85%</span><span class="qb">+7%</span></div>
+          <div class="q-pill"           onclick="setQ(.10, this)"><span class="ql">&gt;90%</span><span class="qb">+10%</span></div>
+        </div>
+      </div>
+
+      <!-- Indicações Parceiro -->
+      <div class="igroup hidden" id="g-indicacoes" style="margin-top:14px;">
+        <label>Receita de Indicações / Terceiros (opcional)</label>
+        <div class="iwrap"><span class="ipfx">R$</span>
+          <input type="number" id="rec-indicacoes" placeholder="0,00" min="0" step="0.01" inputmode="decimal"/>
+        </div>
+      </div>
+
+    </div><!-- /campos-card -->
+
+    <button class="btn-calc" onclick="calcular()">✦ Calcular Comissão</button>
+
+    <!-- RESULTADO -->
+    <div id="resultado">
+
+      <div class="res-hero">
+        <div class="res-badge" id="res-badge">—</div>
+        <div class="res-lbl">Previsão de RV Total</div>
+        <div class="res-val" id="res-total"><small>R$</small>0,00</div>
+        <div class="res-sub" id="res-sub">—</div>
+      </div>
+
+      <div class="bk-card">
+        <div class="bk-title">Detalhamento</div>
+        <div id="bk-body"></div>
+        <div class="prog-wrap hidden" id="prog-wrap">
+          <div class="prog-labels">
+            <span>Atingimento</span>
+            <span id="prog-pct">0%</span>
           </div>
-          <div class="contact-text">
-            <strong>Serviços</strong>
-            <p>Sites responsivos, aplicações web e muito mais</p>
+          <div class="prog-bg">
+            <div class="prog-fill" id="prog-fill" style="width:0%"></div>
           </div>
         </div>
       </div>
+
+      <div class="info-box hidden" id="box-novato">
+        🎁 <strong>Bônus Garantido:</strong> Colaboradores admitidos a partir de 17/03/26 com receita inferior a R$ 300,00 recebem o mínimo de <strong>R$ 300,00</strong> (válido por 3 meses).
+      </div>
+
+      <!-- HISTÓRICO -->
+      <div class="hist-card">
+        <div class="hist-header">
+          <span>📋 Histórico de cálculos</span>
+          <button onclick="carregarHistorico()">↺ Atualizar</button>
+        </div>
+        <div class="hist-list" id="hist-list">
+          <div class="hist-empty">Faça seu primeiro cálculo!</div>
+        </div>
+      </div>
+
+    </div><!-- /resultado -->
+
+  </main>
+
+  <footer class="app-footer">
+    Desenvolvido por <a href="#">Henrique Oliveira</a> · Terra Fibra &copy; 2026
+  </footer>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════
+//  CONFIGURAÇÃO SUPABASE
+//  ⚠️  Substitua pelos seus valores reais!
+// ══════════════════════════════════════════════════
+const SUPABASE_URL  = 'https://SEU_PROJETO.supabase.co';
+const SUPABASE_ANON = 'SUA_CHAVE_ANON_AQUI';
+
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// ══════════════════════════════════════════════════
+//  ESTADO GLOBAL
+// ══════════════════════════════════════════════════
+let cargo    = 'consultor1';
+let fatorQ   = 0.05;
+let usuarioId = null;
+let usuarioNome = '';
+
+// ══════════════════════════════════════════════════
+//  HELPERS UI
+// ══════════════════════════════════════════════════
+function show(id)  { document.getElementById(id)?.classList.remove('hidden'); }
+function hide(id)  { document.getElementById(id)?.classList.add('hidden'); }
+function toggle(id, cond) { cond ? show(id) : hide(id); }
+
+function toast(msg, dur=2800) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), dur);
+}
+
+function fmt(v) {
+  if (isNaN(v) || v === null) return '—';
+  return 'R$ ' + v.toFixed(2)
+    .replace('.', ',')
+    .replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+function fmtDate(iso) {
+  const d = new Date(iso);
+  return d.toLocaleDateString('pt-BR') + ' ' +
+         d.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
+}
+
+// ══════════════════════════════════════════════════
+//  CPF MASK
+// ══════════════════════════════════════════════════
+document.getElementById('l-cpf').addEventListener('input', function() {
+  let v = this.value.replace(/\D/g,'');
+  if (v.length > 3) v = v.slice(0,3)+'.'+v.slice(3);
+  if (v.length > 7) v = v.slice(0,7)+'.'+v.slice(7);
+  if (v.length > 11) v = v.slice(0,11)+'-'+v.slice(11);
+  this.value = v.slice(0,14);
+});
+
+document.getElementById('l-senha').addEventListener('keydown', e => {
+  if (e.key === 'Enter') fazerLogin();
+});
+
+// ══════════════════════════════════════════════════
+//  LOGIN
+// ══════════════════════════════════════════════════
+async function fazerLogin() {
+  const cpf   = document.getElementById('l-cpf').value.trim();
+  const senha = document.getElementById('l-senha').value;
+  const btn   = document.getElementById('l-btn-entrar');
+  const erro  = document.getElementById('l-error');
+  const errMsg = document.getElementById('l-error-msg');
+
+  if (!cpf || !senha) {
+    errMsg.textContent = 'Preencha CPF e senha.';
+    erro.classList.add('show'); return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Verificando...';
+  erro.classList.remove('show');
+
+  try {
+    const { data, error } = await db.rpc('verificar_login', {
+      p_cpf: cpf, p_senha: senha
+    });
+
+    if (error || !data || data.length === 0) {
+      errMsg.textContent = 'CPF ou senha incorretos. Tente novamente.';
+      erro.classList.add('show');
+    } else {
+      const user = data[0];
+      usuarioId   = user.id;
+      usuarioNome = user.nome;
+      cargo       = user.cargo || 'consultor1';
+
+      // atualiza último login
+      await db.from('usuarios').update({ ultimo_login: new Date().toISOString() }).eq('id', user.id);
+
+      document.getElementById('h-nome').textContent = user.nome.split(' ')[0];
+
+      // seleciona cargo automaticamente
+      document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+      const idx = {consultor1:0, consultor2:1, lider:2}[cargo] ?? 0;
+      const roleBtns = document.querySelectorAll('.role-btn');
+      roleBtns[idx]?.classList.add('active');
+      atualizarCampos();
+
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      carregarHistorico();
+    }
+  } catch(e) {
+    errMsg.textContent = 'Erro de conexão. Verifique o Supabase.';
+    erro.classList.add('show');
+    console.error(e);
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = 'Entrar na conta';
+}
+
+function sair() {
+  usuarioId = null; usuarioNome = '';
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('l-cpf').value = '';
+  document.getElementById('l-senha').value = '';
+  document.getElementById('resultado').style.display = 'none';
+  document.getElementById('l-error').classList.remove('show');
+}
+
+// ══════════════════════════════════════════════════
+//  CARGO
+// ══════════════════════════════════════════════════
+function setCargo(c, btn) {
+  cargo = c;
+  document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  atualizarCampos();
+  document.getElementById('resultado').style.display = 'none';
+}
+
+function atualizarCampos() {
+  const isLider = cargo === 'lider';
+  const isC2    = cargo === 'consultor2';
+
+  toggle('g-receita',    !isLider);
+  toggle('g-meta',        isC2 || isLider);
+  toggle('g-vendas',      isC2 || isLider);
+  toggle('g-qualidade',  !isLider);
+  toggle('g-indicacoes',  isC2 || isLider);
+}
+
+// ══════════════════════════════════════════════════
+//  QUALIDADE
+// ══════════════════════════════════════════════════
+function setQ(f, el) {
+  fatorQ = f;
+  document.querySelectorAll('.q-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ══════════════════════════════════════════════════
+//  FATOR DE RECEITA (tabela oficial)
+// ══════════════════════════════════════════════════
+function getFator(r) {
+  if (r <=  1000) return 0.15;
+  if (r <=  1350) return 0.20;
+  if (r <=  2500) return 0.40;
+  if (r <=  3000) return 0.45;
+  if (r <=  3500) return 0.55;
+  if (r <=  4000) return 0.65;
+  if (r <=  4500) return 0.75;
+  if (r <=  5000) return 1.00;
+  return 1.20;
+}
+
+// ══════════════════════════════════════════════════
+//  BÔNUS META TIME (Consultor II)
+// ══════════════════════════════════════════════════
+function getBonusMetaTime(pct) {
+  if (pct < 85)  return 0;
+  if (pct < 100) return 250;
+  const base = 450;
+  const extras = Math.floor((Math.min(pct, 140) - 100) / 5);
+  return base + extras * 100;
+}
+
+// ══════════════════════════════════════════════════
+//  BÔNUS LÍDER
+// ══════════════════════════════════════════════════
+function getBonusLider(pct) {
+  if (pct < 85)  return 0;
+  if (pct < 100) return 600;
+  const base = 1000;
+  const extras = Math.floor((Math.min(pct, 140) - 100) / 5);
+  return base + extras * 200;
+}
+
+// ══════════════════════════════════════════════════
+//  BÔNUS INDICAÇÕES
+// ══════════════════════════════════════════════════
+function getBonusIndicacoes(recInd, pct) {
+  if (pct >= 100) return recInd * 0.15;
+  if (pct >= 80)  return recInd * 0.10;
+  return 0;
+}
+
+// ══════════════════════════════════════════════════
+//  RENDER BREAKDOWN
+// ══════════════════════════════════════════════════
+function renderRow(icon, label, val, cls='') {
+  return `<div class="bk-row">
+    <span class="bk-lbl"><span>${icon}</span>${label}</span>
+    <span class="bk-val ${cls}">${val}</span>
+  </div>`;
+}
+
+function statusBadge(pct) {
+  if (pct < 85)  return `<span style="color:#F87171">✗ Não atingida (${pct.toFixed(1)}%)</span>`;
+  if (pct < 100) return `<span style="color:#FCD34D">⚡ Parcial (${pct.toFixed(1)}%)</span>`;
+  return `<span style="color:#4ADE80">✓ Atingida (${pct.toFixed(1)}%)</span>`;
+}
+
+// ══════════════════════════════════════════════════
+//  CALCULAR
+// ══════════════════════════════════════════════════
+async function calcular() {
+  const receita    = parseFloat(document.getElementById('receita').value)       || 0;
+  const metaQtd    = parseInt(document.getElementById('meta-qtd').value)        || 0;
+  const vendasQtd  = parseInt(document.getElementById('vendas-qtd').value)      || 0;
+  const recInd     = parseFloat(document.getElementById('rec-indicacoes').value)|| 0;
+
+  let payload = {
+    usuario_id: usuarioId,
+    cargo,
+    receita:               null,
+    fator_comissao:        null,
+    rv_base:               null,
+    indice_qualidade:      null,
+    fator_qualidade:       null,
+    acelerador_qualidade:  null,
+    meta_quantidade:       null,
+    vendas_realizadas:     null,
+    percentual_atingido:   null,
+    bonus_meta_time:       null,
+    receita_indicacoes:    null,
+    bonus_indicacoes:      null,
+    rv_total:              0,
+    bonus_novato_aplicado: false,
+  };
+
+  let html = '';
+  let total = 0;
+  let badge = '';
+  let subtext = '';
+  let pct = 0;
+  let novato = false;
+
+  // ── CONSULTOR I ──
+  if (cargo === 'consultor1') {
+    if (receita <= 0) { toast('⚠️ Informe a receita.'); return; }
+    badge = 'CONSULTOR I PAP';
+    const fator = getFator(receita);
+    const rv    = receita * fator;
+    const acel  = rv * fatorQ;
+    total = rv + acel;
+
+    const qLabel = ['≤80%','>80%','>85%','>90%'][[0,.05,.07,.10].indexOf(fatorQ)] ?? '';
+
+    if (total < 300) { total = 300; novato = true; }
+
+    payload = { ...payload,
+      receita, fator_comissao: fator, rv_base: rv,
+      indice_qualidade: qLabel, fator_qualidade: fatorQ,
+      acelerador_qualidade: acel, rv_total: total,
+      bonus_novato_aplicado: novato,
+    };
+
+    subtext = `Fator ${(fator*100).toFixed(0)}% · Acelerador ${(fatorQ*100).toFixed(0)}%`;
+
+    html  = renderRow('💰','Receita do mês',       fmt(receita));
+    html += renderRow('📊','Fator de comissão',    (fator*100).toFixed(0)+'%','a');
+    html += renderRow('🏆','RV Vendeu & Ganhou',   fmt(rv));
+    html += renderRow('✨',`Acelerador de Qualidade (+${(fatorQ*100).toFixed(0)}%)`, fmt(acel), fatorQ>0?'s':'w');
+    html += renderRow('💎','RV Total',             fmt(total),'s');
+  }
+
+  // ── CONSULTOR II ──
+  else if (cargo === 'consultor2') {
+    if (receita <= 0 || metaQtd <= 0) { toast('⚠️ Preencha receita e meta.'); return; }
+    badge = 'CONSULTOR II PAP';
+    pct = (vendasQtd / metaQtd) * 100;
+
+    const fator      = getFator(receita);
+    const rv         = receita * fator;
+    const acel       = rv * fatorQ;
+    const bonusTime  = getBonusMetaTime(pct);
+    const bonusInd   = getBonusIndicacoes(recInd, pct);
+    total = rv + acel + bonusTime + bonusInd;
+
+    const qLabel = ['≤80%','>80%','>85%','>90%'][[0,.05,.07,.10].indexOf(fatorQ)] ?? '';
+
+    if (total < 300) { total = 300; novato = true; }
+
+    payload = { ...payload,
+      receita, fator_comissao: fator, rv_base: rv,
+      indice_qualidade: qLabel, fator_qualidade: fatorQ,
+      acelerador_qualidade: acel, meta_quantidade: metaQtd,
+      vendas_realizadas: vendasQtd, percentual_atingido: pct,
+      bonus_meta_time: bonusTime, receita_indicacoes: recInd,
+      bonus_indicacoes: bonusInd, rv_total: total,
+      bonus_novato_aplicado: novato,
+    };
+
+    subtext = `Meta ${pct.toFixed(1)}% · Meta Time ${fmt(bonusTime)}`;
+
+    html  = renderRow('💰','Receita do mês',          fmt(receita));
+    html += renderRow('📊','Fator de comissão',       (fator*100).toFixed(0)+'%','a');
+    html += renderRow('🏆','RV Vendeu & Ganhou',      fmt(rv));
+    html += renderRow('✨',`Acelerador (+${(fatorQ*100).toFixed(0)}%)`, fmt(acel), fatorQ>0?'s':'w');
+    html += renderRow('🎯','Status Meta Time',        statusBadge(pct));
+    html += renderRow('👥','Bônus Meta Time',         fmt(bonusTime), pct>=100?'s':pct>=85?'w':'d');
+    if (recInd > 0)
+      html += renderRow('🤝','Bônus Indicações/Terceiros', fmt(bonusInd),'s');
+    html += renderRow('💎','RV Total',                fmt(total),'s');
+  }
+
+  // ── LÍDER ──
+  else if (cargo === 'lider') {
+    if (metaQtd <= 0) { toast('⚠️ Informe a meta de quantidade.'); return; }
+    badge = 'LÍDER PAP';
+    pct = (vendasQtd / metaQtd) * 100;
+
+    const bonusBase = getBonusLider(pct);
+    const bonusInd  = getBonusIndicacoes(recInd, pct);
+    total = bonusBase + bonusInd;
+
+    payload = { ...payload,
+      meta_quantidade: metaQtd, vendas_realizadas: vendasQtd,
+      percentual_atingido: pct, bonus_meta_time: bonusBase,
+      receita_indicacoes: recInd, bonus_indicacoes: bonusInd,
+      rv_total: total,
+    };
+
+    subtext = `Atingimento ${pct.toFixed(1)}% · Base ${fmt(bonusBase)}`;
+
+    html  = renderRow('🎯','Status da Meta',          statusBadge(pct));
+    html += renderRow('📦','Meta de quantidade',      metaQtd+' vendas');
+    html += renderRow('✅','Vendas realizadas',        vendasQtd+' vendas');
+    html += renderRow('🏆','RV por atingimento',      fmt(bonusBase), pct>=100?'s':pct>=85?'w':'d');
+    if (recInd > 0)
+      html += renderRow('🤝','Bônus Indicações/Terceiros', fmt(bonusInd),'s');
+    html += renderRow('💎','RV Total',                fmt(total),'s');
+  }
+
+  // ── RENDER UI ──
+  document.getElementById('res-badge').textContent = badge;
+  const parts = fmt(total).split('$ ');
+  document.getElementById('res-total').innerHTML = `<small>R$</small> ${parts[1]}`;
+  document.getElementById('res-sub').textContent = subtext;
+  document.getElementById('bk-body').innerHTML   = html;
+
+  // progresso
+  if (cargo !== 'consultor1' && metaQtd > 0) {
+    show('prog-wrap');
+    const w = Math.min(pct, 140);
+    document.getElementById('prog-fill').style.width = (w/140*100)+'%';
+    document.getElementById('prog-pct').textContent  = pct.toFixed(1)+'%';
+  } else {
+    hide('prog-wrap');
+  }
+
+  // novato
+  novato ? show('box-novato') : hide('box-novato');
+
+  document.getElementById('resultado').style.display = 'block';
+  document.getElementById('resultado').scrollIntoView({ behavior:'smooth', block:'start' });
+
+  // salva no banco
+  await salvarHistorico(payload);
+  await carregarHistorico();
+}
+
+// ══════════════════════════════════════════════════
+//  SALVAR HISTÓRICO
+// ══════════════════════════════════════════════════
+async function salvarHistorico(payload) {
+  if (!usuarioId) return;
+  const { error } = await db.from('historico_calculos').insert(payload);
+  if (error) console.warn('Erro ao salvar histórico:', error.message);
+  else toast('✅ Cálculo salvo no histórico!');
+}
+
+// ══════════════════════════════════════════════════
+//  CARREGAR HISTÓRICO
+// ══════════════════════════════════════════════════
+async function carregarHistorico() {
+  if (!usuarioId) return;
+
+  const { data, error } = await db
+    .from('historico_calculos')
+    .select('*')
+    .eq('usuario_id', usuarioId)
+    .order('calculado_em', { ascending: false })
+    .limit(15);
+
+  const list = document.getElementById('hist-list');
+
+  if (error || !data || data.length === 0) {
+    list.innerHTML = '<div class="hist-empty">Nenhum cálculo salvo ainda.</div>';
+    return;
+  }
+
+  const cargoLabel = { consultor1:'Consultor I', consultor2:'Consultor II', lider:'Líder PAP' };
+  const cargoIcon  = { consultor1:'🏃', consultor2:'⭐', lider:'👑' };
+
+  list.innerHTML = data.map(r => `
+    <div class="hist-item">
+      <div class="hi-left">
+        <div class="hi-cargo">${cargoIcon[r.cargo]||'📋'} ${cargoLabel[r.cargo]||r.cargo}</div>
+        <div class="hi-data">${fmtDate(r.calculado_em)}</div>
+      </div>
+      <div class="hi-right">
+        <div class="hi-rv">${fmt(r.rv_total)}</div>
+      </div>
     </div>
-  </div>
+  `).join('');
+}
 
-  <script>
-    function toggleAdditionalInputs() {
-      const cargo = document.getElementById("cargo").value;
-      const receitaContainer = document.getElementById("receita-container");
-      const metaQtdContainer = document.getElementById("meta-qtd-container");
-      const vendasQtdContainer = document.getElementById("vendas-qtd-container");
-      const planoContainer = document.getElementById("plano-container");
-
-      // Mostrar/ocultar campos conforme o tipo de vendedor
-      receitaContainer.style.display = cargo === "lider" ? "none" : "block";
-      metaQtdContainer.classList.toggle("show", cargo === "consultor2" || cargo === "lider");
-      vendasQtdContainer.classList.toggle("show", cargo === "consultor2" || cargo === "lider");
-      
-      // Ocultar checkbox de plano móvel para Líder (não precisa vender chip)
-      planoContainer.style.display = cargo === "lider" ? "none" : "block";
-    }
-
-    function calcularComissao() {
-      const cargo = document.getElementById("cargo").value;
-      const receita = parseFloat(document.getElementById("receita").value) || 0;
-      const metaQuantidade = parseInt(document.getElementById("meta-qtd").value) || 0;
-      const vendasQuantidade = parseInt(document.getElementById("vendas-qtd").value) || 0;
-      const vendeuPlano = document.getElementById("vendeu-plano").checked;
-
-      let resultadoHTML = "";
-      let comissaoTotal = 0;
-      let comissaoVenda = 0;
-      let comissaoEquipe = 0;
-      let percentualAtingido = 0;
-
-      if (!cargo) {
-        document.getElementById("resultado").innerHTML = `
-          <p class="danger-text">
-            <i class="fas fa-exclamation-circle"></i> 
-            <strong>Selecione um tipo de vendedor.</strong>
-          </p>`;
-        return;
-      }
-
-      // Tabela VENDEU & GANHOU (fator por receita)
-      const getFator = receita => {
-        if (receita <= 1000) return 0.15;
-        else if (receita <= 1500) return 0.20;
-        else if (receita <= 2000) return 0.25;
-        else if (receita <= 2500) return 0.35;
-        else if (receita <= 3000) return 0.45;
-        else if (receita <= 3500) return 0.55;
-        else if (receita <= 4000) return 0.65;
-        else if (receita <= 4500) return 0.75;
-        else if (receita <= 5000) return 1.00;
-        else return 1.20;
-      };
-
-      // Cálculo para Consultor I
-      if (cargo === "consultor1") {
-        if (receita <= 0) {
-          document.getElementById("resultado").innerHTML = `
-            <p class="danger-text">
-              <i class="fas fa-exclamation-circle"></i> 
-              <strong>Informe um valor de receita válido.</strong>
-            </p>`;
-          return;
-        }
-        
-        const fator = getFator(receita);
-        comissaoVenda = receita * fator;
-        comissaoTotal = comissaoVenda;
-        
-        // Aplica desconto de 20% se não vendeu plano móvel
-        if (!vendeuPlano) comissaoTotal *= 0.8;
-
-        resultadoHTML = `
-          <div class="summary-card">
-            <h3>Previsão de Comissão</h3>
-            <div class="summary-amount">R$ ${comissaoTotal.toFixed(2).replace(".", ",")}</div>
-            <p>Consultor I PAP</p>
-          </div>
-          <p><span class="label">Receita:</span> <span class="value">R$ ${receita.toFixed(2).replace(".", ",")}</span></p>
-          <p><span class="label">Fator de Comissão:</span> <span class="value">${(fator * 100).toFixed(0)}%</span></p>
-          <p><span class="label">Comissão Base:</span> <span class="value">R$ ${comissaoVenda.toFixed(2).replace(".", ",")}</span></p>
-          ${!vendeuPlano ? 
-            `<p class="danger-text"><span class="label"><i class="fas fa-info-circle"></i> Ajuste:</span> <span class="value">-20% (sem venda de plano)</span></p>` : 
-            `<p class="success-text"><span class="label"><i class="fas fa-check-circle"></i> Status:</span> <span class="value">Plano móvel vendido</span></p>`
-          }
-        `;
-      }
-
-      // Cálculo para Consultor II
-      else if (cargo === "consultor2") {
-        if (receita <= 0 || metaQuantidade <= 0 || vendasQuantidade < 0) {
-          document.getElementById("resultado").innerHTML = `
-            <p class="danger-text">
-              <i class="fas fa-exclamation-circle"></i> 
-              <strong>Preencha todos os campos corretamente.</strong>
-            </p>`;
-          return;
-        }
-
-        // Calcula percentual de atingimento
-        percentualAtingido = (vendasQuantidade / metaQuantidade) * 100;
-        
-        const fator = getFator(receita);
-        comissaoVenda = receita * fator;
-
-        // Cálculo do bônus da equipe baseado na quantidade de vendas
-        let statusMeta = "";
-        if (percentualAtingido < 85) {
-          comissaoEquipe = 0;
-          statusMeta = `<p class="danger-text"><span class="label"><i class="fas fa-times-circle"></i> Status Meta:</span> <span class="value">Não atingida (${percentualAtingido.toFixed(2)}%)</span></p>`;
-        }
-        else if (percentualAtingido < 100) {
-          comissaoEquipe = 250; // R$ 250 para 85%-99,99%
-          statusMeta = `<p class="warning-text"><span class="label"><i class="fas fa-exclamation-triangle"></i> Status Meta:</span> <span class="value">Parcial (${percentualAtingido.toFixed(2)}%)</span></p>`;
-        }
-        else {
-          comissaoEquipe = 450; // R$ 450 base para ≥100%
-          const adicional = Math.floor((Math.min(percentualAtingido, 140) - 100) / 5);
-          comissaoEquipe += adicional * 100; // R$ 100 a cada 5% adicional
-          statusMeta = `<p class="success-text"><span class="label"><i class="fas fa-check-circle"></i> Status Meta:</span> <span class="value">Atingida (${percentualAtingido.toFixed(2)}%)</span></p>`;
-        }
-
-        comissaoTotal = comissaoVenda + comissaoEquipe;
-        
-        // Aplica desconto de 20% se não vendeu plano móvel
-        if (!vendeuPlano) comissaoTotal *= 0.8;
-
-        resultadoHTML = `
-          <div class="summary-card">
-            <h3>Previsão de Comissão</h3>
-            <div class="summary-amount">R$ ${comissaoTotal.toFixed(2).replace(".", ",")}</div>
-            <p>Consultor II PAP</p>
-          </div>
-          <p><span class="label">Receita:</span> <span class="value">R$ ${receita.toFixed(2).replace(".", ",")}</span></p>
-          <p><span class="label">Fator de Comissão:</span> <span class="value">${(fator * 100).toFixed(0)}%</span></p>
-          <p><span class="label">Comissão por Vendas:</span> <span class="value">R$ ${comissaoVenda.toFixed(2).replace(".", ",")}</span></p>
-          <p><span class="label">Meta de Quantidade:</span> <span class="value">${metaQuantidade} vendas</span></p>
-          <p><span class="label">Vendas Realizadas:</span> <span class="value">${vendasQuantidade} vendas</span></p>
-          ${statusMeta}
-          <p><span class="label">Bônus de Equipe:</span> <span class="value">R$ ${comissaoEquipe.toFixed(2).replace(".", ",")}</span></p>
-          ${!vendeuPlano ? 
-            `<p class="danger-text"><span class="label"><i class="fas fa-info-circle"></i> Ajuste:</span> <span class="value">-20% (sem venda de plano)</span></p>` : 
-            `<p class="success-text"><span class="label"><i class="fas fa-check-circle"></i> Status:</span> <span class="value">Plano móvel vendido</span></p>`
-          }
-        `;
-      }
-
-      // Cálculo para Líder PAP (mesmos campos do Consultor II, mas com regras diferentes)
-      else if (cargo === "lider") {
-        if (metaQuantidade <= 0 || vendasQuantidade < 0) {
-          document.getElementById("resultado").innerHTML = `
-            <p class="danger-text">
-              <i class="fas fa-exclamation-circle"></i> 
-              <strong>Preencha todos os campos corretamente.</strong>
-            </p>`;
-          return;
-        }
-
-        // Calcula percentual de atingimento (mesmo cálculo do Consultor II)
-        percentualAtingido = (vendasQuantidade / metaQuantidade) * 100;
-        
-        // Regras específicas para Líder conforme a imagem
-        let statusMeta = "";
-        if (percentualAtingido < 85) {
-          comissaoTotal = 0;
-          statusMeta = `<p class="danger-text"><span class="label"><i class="fas fa-times-circle"></i> Status Meta:</span> <span class="value">Não atingida (${percentualAtingido.toFixed(2)}%)</span></p>`;
-        }
-        else if (percentualAtingido < 100) {
-          comissaoTotal = 600; // R$ 600 para 85%-99,99%
-          statusMeta = `<p class="warning-text"><span class="label"><i class="fas fa-exclamation-triangle"></i> Status Meta:</span> <span class="value">Parcial (${percentualAtingido.toFixed(2)}%)</span></p>`;
-        }
-        else {
-          comissaoTotal = 1000; // R$ 1000 base para ≥100%
-          const adicional = Math.floor((Math.min(percentualAtingido, 140) - 100) / 5);
-          comissaoTotal += adicional * 200; // R$ 200 a cada 5% adicional
-          statusMeta = `<p class="success-text"><span class="label"><i class="fas fa-check-circle"></i> Status Meta:</span> <span class="value">Atingida (${percentualAtingido.toFixed(2)}%)</span></p>`;
-        }
-
-        resultadoHTML = `
-          <div class="summary-card">
-            <h3>Previsão de Comissão</h3>
-            <div class="summary-amount">R$ ${comissaoTotal.toFixed(2).replace(".", ",")}</div>
-            <p>Líder PAP</p>
-          </div>
-          <p><span class="label">Meta de Quantidade:</span> <span class="value">${metaQuantidade} vendas</span></p>
-          <p><span class="label">Vendas Realizadas:</span> <span class="value">${vendasQuantidade} vendas</span></p>
-          <p><span class="label">Percentual de Atingimento:</span> <span class="value">${percentualAtingido.toFixed(2)}%</span></p>
-          ${statusMeta}
-        `;
-      }
-
-      document.getElementById("resultado").innerHTML = resultadoHTML;
-    }
-
-    // Funções para o modal de contato
-    function openContactModal() {
-      document.getElementById('contactModal').classList.add('show');
-      document.body.style.overflow = 'hidden';
-    }
-
-    function closeContactModal() {
-      document.getElementById('contactModal').classList.remove('show');
-      document.body.style.overflow = 'auto';
-    }
-
-    // Fechar o modal clicando fora dele
-    document.getElementById('contactModal').addEventListener('click', function(e) {
-      if (e.target === this) {
-        closeContactModal();
-      }
-    });
-
-    document.addEventListener('DOMContentLoaded', function() {
-      toggleAdditionalInputs();
-      
-      // Adicionar event listeners para os inputs
-      document.querySelectorAll('input').forEach(input => {
-        input.addEventListener('focus', function() {
-          this.parentElement.classList.add('focused');
-        });
-        input.addEventListener('blur', function() {
-          this.parentElement.classList.remove('focused');
-        });
-      });
-    });
-  </script>
+// init
+atualizarCampos();
+</script>
 </body>
 </html>
