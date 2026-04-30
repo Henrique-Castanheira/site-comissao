@@ -735,29 +735,69 @@ async function fazerLogin() {
   erro.classList.remove('show');
 
   try {
-    const { data, error } = await db.rpc('verificar_login', {
+    // 1. Tenta via RPC (função bcrypt)
+    const { data: rpcData, error: rpcErr } = await db.rpc('verificar_login', {
       p_cpf: cpf, p_senha: senha
     });
 
-    if (error || !data || data.length === 0) {
-      errMsg.textContent = 'CPF ou senha incorretos. Tente novamente.';
+    console.log('[LOGIN] RPC data:', rpcData, '| error:', rpcErr);
+
+    let user = null;
+
+    if (!rpcErr && rpcData && rpcData.length > 0) {
+      user = rpcData[0];
+    } else if (rpcErr?.code === '42883' || rpcErr?.code === 'PGRST202') {
+      // Função não existe — SQL não foi rodado
+      errMsg.textContent = '⚠️ Execute o supabase_setup.sql no Supabase primeiro!';
+      erro.classList.add('show');
+      btn.disabled = false; btn.innerHTML = 'Entrar na conta'; return;
+    } else if (rpcErr?.code === '42P01') {
+      // Tabela não existe
+      errMsg.textContent = '⚠️ Tabelas não encontradas. Execute o supabase_setup.sql!';
+      erro.classList.add('show');
+      btn.disabled = false; btn.innerHTML = 'Entrar na conta'; return;
+    } else {
+      // 2. Fallback: busca na tabela para checar se usuário existe
+      const { data: tbl, error: tblErr } = await db
+        .from('usuarios')
+        .select('id, nome, cpf, cargo, ativo')
+        .eq('cpf', cpf).eq('ativo', true).maybeSingle();
+
+      console.log('[LOGIN] Table data:', tbl, '| error:', tblErr);
+
+      if (tblErr?.code === '42P01') {
+        errMsg.textContent = '⚠️ Execute o supabase_setup.sql no painel do Supabase!';
+        erro.classList.add('show');
+        btn.disabled = false; btn.innerHTML = 'Entrar na conta'; return;
+      }
+
+      if (!tbl) {
+        errMsg.textContent = 'CPF ou senha incorretos.';
+        erro.classList.add('show');
+        btn.disabled = false; btn.innerHTML = 'Entrar na conta'; return;
+      }
+
+      // usuario existe mas RPC falhou — erro desconhecido
+      errMsg.textContent = 'Erro interno: ' + (rpcErr?.message || 'tente novamente.');
+      erro.classList.add('show');
+      btn.disabled = false; btn.innerHTML = 'Entrar na conta'; return;
+    }
+
+    if (!user) {
+      errMsg.textContent = 'CPF ou senha incorretos.';
       erro.classList.add('show');
     } else {
-      const user = data[0];
       usuarioId   = user.id;
       usuarioNome = user.nome;
       cargo       = user.cargo || 'consultor1';
 
-      // atualiza último login
       await db.from('usuarios').update({ ultimo_login: new Date().toISOString() }).eq('id', user.id);
 
       document.getElementById('h-nome').textContent = user.nome.split(' ')[0];
 
-      // seleciona cargo automaticamente
       document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
       const idx = {consultor1:0, consultor2:1, lider:2}[cargo] ?? 0;
-      const roleBtns = document.querySelectorAll('.role-btn');
-      roleBtns[idx]?.classList.add('active');
+      document.querySelectorAll('.role-btn')[idx]?.classList.add('active');
       atualizarCampos();
 
       document.getElementById('login-screen').style.display = 'none';
@@ -765,9 +805,9 @@ async function fazerLogin() {
       carregarHistorico();
     }
   } catch(e) {
-    errMsg.textContent = 'Erro de conexão. Verifique o Supabase.';
+    console.error('[LOGIN] Exceção:', e);
+    errMsg.textContent = 'Erro: ' + (e.message || 'abra o console F12 para detalhes.');
     erro.classList.add('show');
-    console.error(e);
   }
 
   btn.disabled = false;
