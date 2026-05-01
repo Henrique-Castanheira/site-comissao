@@ -177,6 +177,45 @@
     .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 
     @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+
+    /* ── ADMIN BUTTON ── */
+    .bar-admin { background:rgba(139,92,246,.12); border:1px solid rgba(139,92,246,.25); color:#C4B5FD; font-size:15px; cursor:pointer; padding:5px 9px; border-radius:8px; transition:background .2s; }
+    .bar-admin:hover { background:rgba(139,92,246,.22); }
+
+    /* ── MODAL ── */
+    .modal-overlay { position:fixed; inset:0; z-index:400; background:rgba(0,0,0,.65); backdrop-filter:blur(6px); display:flex; align-items:flex-end; justify-content:center; padding:0; animation:fadeIn .2s ease; }
+    .modal-overlay:not(.hidden) { display:flex; }
+    @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+    .modal-box { background:var(--surface); border:1px solid var(--border); border-radius:24px 24px 0 0; width:100%; max-width:520px; max-height:90dvh; overflow-y:auto; padding:0 0 32px; animation:slideUp .3s cubic-bezier(.4,0,.2,1); }
+    @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+    .modal-header { display:flex; align-items:flex-start; justify-content:space-between; padding:22px 22px 0; margin-bottom:20px; position:sticky; top:0; background:var(--surface); padding-top:22px; padding-bottom:16px; border-bottom:1px solid var(--border); z-index:1; }
+    .modal-title { font-family:'Syne',sans-serif; font-size:17px; font-weight:800; }
+    .modal-sub   { font-size:11px; color:var(--muted); margin-top:3px; }
+    .modal-close { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08); color:var(--muted); font-size:14px; cursor:pointer; width:30px; height:30px; border-radius:8px; display:flex; align-items:center; justify-content:center; transition:all .2s; flex-shrink:0; }
+    .modal-close:hover { background:rgba(248,113,113,.12); color:var(--bad); border-color:rgba(248,113,113,.2); }
+    .modal-section { padding:0 22px; margin-bottom:20px; }
+
+    /* lista de usuários */
+    .user-item { display:flex; align-items:center; justify-content:space-between; padding:12px 14px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.06); border-radius:12px; margin-bottom:8px; gap:10px; }
+    .user-item.is-admin { border-color:rgba(139,92,246,.25); background:rgba(139,92,246,.07); }
+    .ui-info { flex:1; min-width:0; }
+    .ui-nome { font-size:13px; font-weight:700; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .ui-cpf  { font-size:11px; color:var(--muted); margin-top:2px; font-family:monospace; }
+    .ui-tags { display:flex; align-items:center; gap:5px; margin-top:4px; flex-wrap:wrap; }
+    .ui-tag  { font-size:10px; font-weight:700; padding:2px 8px; border-radius:10px; background:rgba(139,92,246,.12); color:#C4B5FD; }
+    .ui-tag.admin { background:rgba(249,115,22,.15); color:#FDBA74; }
+    .ui-tag.c1    { background:rgba(52,211,153,.1);  color:var(--ok); }
+    .ui-tag.c2    { background:rgba(251,191,36,.1);  color:var(--warn); }
+    .ui-tag.ld    { background:rgba(236,72,153,.12); color:#F9A8D4; }
+    .ui-del { background:rgba(248,113,113,.1); border:1px solid rgba(248,113,113,.2); color:var(--bad); font-size:13px; cursor:pointer; width:32px; height:32px; border-radius:8px; display:flex; align-items:center; justify-content:center; transition:all .2s; flex-shrink:0; }
+    .ui-del:hover { background:rgba(248,113,113,.2); }
+
+    /* form novo usuario */
+    .admin-form .iw input, .admin-form .iw select { padding:12px 13px; font-size:14px; }
+    .admin-form .iw select { width:100%; background:rgba(255,255,255,.04); border:1px solid rgba(139,92,246,.18); border-radius:12px; outline:none; color:var(--text); font-family:'DM Sans',sans-serif; font-size:14px; appearance:none; cursor:pointer; }
+    .btn-add-user { width:100%; padding:14px; background:linear-gradient(135deg,var(--p1),var(--p2)); border:none; border-radius:12px; color:#fff; font-family:'Syne',sans-serif; font-size:14px; font-weight:700; cursor:pointer; transition:transform .15s,opacity .2s; }
+    .btn-add-user:active { transform:scale(.98); opacity:.9; }
+    .admin-err { margin-top:10px; padding:10px 14px; background:rgba(248,113,113,.08); border:1px solid rgba(248,113,113,.22); border-radius:10px; color:#FCA5A5; font-size:12px; }
     @media(min-width:540px){ .main{padding:28px 24px 100px} .res-num{font-size:56px} }
   </style>
 </head>
@@ -227,6 +266,7 @@
       </div>
       <div class="bar-right">
         <div class="bar-chip">👤 <span id="bar-nome">—</span></div>
+        <button class="bar-admin hidden" id="btn-admin" onclick="abrirAdmin()" title="Gerenciar usuários">⚙️</button>
         <button class="bar-out" onclick="logout()" title="Sair">⎋</button>
       </div>
     </div>
@@ -325,18 +365,68 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- MODAL ADMIN -->
+<div id="modal-admin" class="modal-overlay hidden" onclick="fecharAdminFora(event)">
+  <div class="modal-box z">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">⚙️ Gerenciar Usuários</div>
+        <div class="modal-sub">Apenas você (admin) tem acesso</div>
+      </div>
+      <button class="modal-close" onclick="fecharAdmin()">✕</button>
+    </div>
+
+    <!-- LISTA -->
+    <div class="modal-section">
+      <div class="slabel" style="margin-bottom:10px;">Usuários cadastrados</div>
+      <div id="admin-lista"></div>
+    </div>
+
+    <!-- FORM NOVO USUÁRIO -->
+    <div class="modal-section">
+      <div class="slabel" style="margin-bottom:12px;">Adicionar novo usuário</div>
+      <div class="admin-form">
+        <div class="ig" style="margin-bottom:10px;">
+          <label>Nome completo</label>
+          <div class="iw"><input type="text" id="a-nome" placeholder="Ex: Carlos Silva" class="np"/></div>
+        </div>
+        <div class="ig" style="margin-bottom:10px;">
+          <label>CPF</label>
+          <div class="iw"><input type="text" id="a-cpf" placeholder="000.000.000-00" maxlength="14" inputmode="numeric" class="np"/></div>
+        </div>
+        <div class="ig" style="margin-bottom:10px;">
+          <label>Senha</label>
+          <div class="iw"><input type="text" id="a-senha" placeholder="Defina uma senha" class="np"/></div>
+        </div>
+        <div class="ig" style="margin-bottom:14px;">
+          <label>Cargo</label>
+          <div class="iw">
+            <select id="a-cargo" class="np">
+              <option value="c1">Consultor I PAP</option>
+              <option value="c2">Consultor II PAP</option>
+              <option value="ld">Líder PAP</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn-add-user" onclick="adicionarUsuario()">+ Adicionar usuário</button>
+        <div class="admin-err hidden" id="admin-err"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 // ══ USUÁRIOS ══════════════════════════════════════
 // Para adicionar alguém: { nome, cpf, senha, cargo }
 // cargo: 'c1' = Consultor I | 'c2' = Consultor II | 'ld' = Líder
 const USUARIOS = [
-  { nome:'Admin Terra',    cpf:'000.000.000-00', senha:'terra123', cargo:'ld' },
-  { nome:'João Consultor', cpf:'111.111.111-11', senha:'terra123', cargo:'c1' },
-  { nome:'Maria Líder',    cpf:'222.222.222-22', senha:'terra123', cargo:'c2' },
+  { nome:'Henrique Oliveira', cpf:'000.000.000-00', senha:'he190911', cargo:'ld', admin:true },
+  { nome:'João Consultor',    cpf:'111.111.111-11', senha:'terra123', cargo:'c1', admin:false },
+  { nome:'Maria Líder',       cpf:'222.222.222-22', senha:'terra123', cargo:'c2', admin:false },
 ];
 
 // ══ ESTADO ════════════════════════════════════════
-let cargo='c1', fatorQ=0.05, historico=[];
+let cargo='c1', fatorQ=0.05, historico=[], isAdmin=false;
 
 // ══ HELPERS ═══════════════════════════════════════
 const $ = id => document.getElementById(id);
@@ -365,7 +455,9 @@ function login(){
   if(!user){ $('l-err').classList.add('show'); $('l-pw').value=''; return; }
   $('l-err').classList.remove('show');
   cargo=user.cargo;
+  isAdmin=user.admin===true;
   $('bar-nome').textContent=user.nome.split(' ')[0];
+  tog('btn-admin', isAdmin);
   document.querySelectorAll('.cargo-btn').forEach(b=>b.classList.remove('on'));
   document.querySelectorAll('.cargo-btn')[{c1:0,c2:1,ld:2}[cargo]??0].classList.add('on');
   atualizarCampos();
@@ -498,6 +590,87 @@ function renderHist(){
     </div>`).join('');
 }
 function limparHist(){ historico=[]; renderHist(); toast('🗑️ Histórico limpo.'); }
+
+// ══ ADMIN ══════════════════════════════════════════
+function abrirAdmin(){
+  renderAdminLista();
+  $('modal-admin').classList.remove('hidden');
+  document.body.style.overflow='hidden';
+}
+function fecharAdmin(){
+  $('modal-admin').classList.add('hidden');
+  document.body.style.overflow='';
+  limparFormAdmin();
+}
+function fecharAdminFora(e){ if(e.target===$('modal-admin')) fecharAdmin(); }
+
+function renderAdminLista(){
+  const el=$('admin-lista');
+  const cargoLabel={c1:'Consultor I',c2:'Consultor II',ld:'Líder PAP'};
+  const cargoTag={c1:'c1',c2:'c2',ld:'ld'};
+  el.innerHTML=USUARIOS.map((u,i)=>`
+    <div class="user-item ${u.admin?'is-admin':''}">
+      <div class="ui-info">
+        <div class="ui-nome">${u.nome}</div>
+        <div class="ui-cpf">${u.cpf}</div>
+        <div class="ui-tags">
+          <span class="ui-tag ${cargoTag[u.cargo]}">${cargoLabel[u.cargo]||u.cargo}</span>
+          ${u.admin?'<span class="ui-tag admin">Admin</span>':''}
+        </div>
+      </div>
+      ${u.admin?'<span style="font-size:18px;padding:0 6px">👑</span>':`<button class="ui-del" onclick="deletarUsuario(${i})" title="Excluir">🗑</button>`}
+    </div>`).join('');
+}
+
+function deletarUsuario(idx){
+  if(USUARIOS[idx].admin){ toast('⚠️ Não é possível excluir o admin.'); return; }
+  const nome=USUARIOS[idx].nome;
+  if(!confirm('Excluir "'+nome+'"?')) return;
+  USUARIOS.splice(idx,1);
+  renderAdminLista();
+  toast('🗑️ "'+nome+'" removido.');
+}
+
+// CPF mask no form admin
+document.addEventListener('DOMContentLoaded',()=>{
+  const ci=$('a-cpf');
+  if(ci) ci.addEventListener('input',function(){
+    let v=this.value.replace(/\D/g,'');
+    if(v.length>3) v=v.slice(0,3)+'.'+v.slice(3);
+    if(v.length>7) v=v.slice(0,7)+'.'+v.slice(7);
+    if(v.length>11) v=v.slice(0,11)+'-'+v.slice(11);
+    this.value=v.slice(0,14);
+  });
+});
+
+function adicionarUsuario(){
+  const nome=$('a-nome').value.trim();
+  const cpf=$('a-cpf').value.trim();
+  const senha=$('a-senha').value.trim();
+  const cargo=$('a-cargo').value;
+  const errEl=$('admin-err');
+
+  if(!nome||!cpf||!senha){
+    errEl.textContent='Preencha todos os campos.'; errEl.classList.remove('hidden'); return;
+  }
+  if(cpf.length<14){
+    errEl.textContent='CPF inválido.'; errEl.classList.remove('hidden'); return;
+  }
+  if(USUARIOS.find(u=>u.cpf===cpf)){
+    errEl.textContent='Já existe um usuário com esse CPF.'; errEl.classList.remove('hidden'); return;
+  }
+  errEl.classList.add('hidden');
+  USUARIOS.push({ nome, cpf, senha, cargo, admin:false });
+  renderAdminLista();
+  limparFormAdmin();
+  toast('✅ "'+nome+'" adicionado!');
+}
+
+function limparFormAdmin(){
+  ['a-nome','a-cpf','a-senha'].forEach(id=>{ if($(id)) $(id).value=''; });
+  if($('a-cargo')) $('a-cargo').value='c1';
+  $('admin-err')?.classList.add('hidden');
+}
 
 atualizarCampos();
 </script>
