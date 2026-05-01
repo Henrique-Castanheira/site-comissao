@@ -262,7 +262,7 @@
         /* CARGO GRID */
         .cargo-grid {
             display: grid;
-            grid-template-columns: repeat(2, 1fr);
+            grid-template-columns: repeat(3, 1fr);
             gap: 8px;
         }
         .cargo-btn {
@@ -645,10 +645,13 @@
             color: #FCA5A5;
             font-size: 12px;
         }
+        /* Loading */
+        .loading { text-align: center; padding: 40px; color: var(--muted); }
 
         @media (max-width: 540px) {
             .main { padding: 16px; }
             .res-num { font-size: 36px; }
+            .cargo-grid { grid-template-columns: repeat(2, 1fr); }
         }
     </style>
 </head>
@@ -684,7 +687,7 @@
             </div>
             <div class="bar-right">
                 <div class="bar-chip">👤 <span id="barNome">—</span></div>
-                <button class="bar-admin hidden" id="btnAdmin" onclick="abrirAdmin()">⚙️</button>
+                <button class="bar-admin hidden" id="btnAdmin">⚙️</button>
                 <button class="bar-out" id="btnLogout">⎋</button>
             </div>
         </div>
@@ -699,8 +702,9 @@
         <div class="card">
             <div class="slabel">Seu cargo</div>
             <div class="cargo-grid">
-                <button class="cargo-btn on" data-cargo="c1"><span class="ci">🏃</span>Consultor I</button>
-                <button class="cargo-btn" data-cargo="ld"><span class="ci">👑</span>Líder PAP</button>
+                <button class="cargo-btn on" data-cargo="consultor1"><span class="ci">🏃</span>Consultor I</button>
+                <button class="cargo-btn" data-cargo="consultor2"><span class="ci">⭐</span>Consultor II</button>
+                <button class="cargo-btn" data-cargo="lider"><span class="ci">👑</span>Líder PAP</button>
             </div>
         </div>
 
@@ -785,23 +789,29 @@
         <div class="modal-header">
             <div>
                 <div class="modal-title">⚙️ Gerenciar Usuários</div>
-                <div class="modal-sub">Apenas você (admin) tem acesso</div>
+                <div class="modal-sub">Apenas administradores têm acesso</div>
             </div>
-            <button class="modal-close" onclick="fecharAdmin()">✕</button>
+            <button class="modal-close" id="modalClose">✕</button>
         </div>
 
         <div class="modal-section">
             <div class="slabel">Usuários cadastrados</div>
-            <div id="adminLista"></div>
+            <div id="adminLista"><div class="loading">Carregando...</div></div>
         </div>
 
         <div class="modal-section">
             <div class="slabel">Adicionar novo usuário</div>
             <div class="admin-form">
-                <div class="ig"><label>Nome completo</label><div class="iw"><input type="text" id="aNome" class="np"></div></div>
-                <div class="ig"><label>CPF</label><div class="iw"><input type="text" id="aCpf" maxlength="14" class="np"></div></div>
-                <div class="ig"><label>Senha</label><div class="iw"><input type="text" id="aSenha" class="np"></div></div>
-                <div class="ig"><label>Cargo</label><div class="iw"><select id="aCargo" class="np"><option value="c1">Consultor I PAP</option><option value="ld">Líder PAP</option></select></div></div>
+                <div class="ig"><label>Nome completo</label><div class="iw"><input type="text" id="aNome" class="np" placeholder="Ex: João Silva"></div></div>
+                <div class="ig"><label>CPF</label><div class="iw"><input type="text" id="aCpf" maxlength="14" class="np" placeholder="000.000.000-00"></div></div>
+                <div class="ig"><label>Senha</label><div class="iw"><input type="text" id="aSenha" class="np" placeholder="Defina uma senha"></div></div>
+                <div class="ig"><label>Cargo</label><div class="iw">
+                    <select id="aCargo" class="np">
+                        <option value="consultor1">Consultor I PAP</option>
+                        <option value="consultor2">Consultor II PAP</option>
+                        <option value="lider">Líder PAP</option>
+                    </select>
+                </div></div>
                 <button class="btn-add-user" id="btnAddUser">+ Adicionar usuário</button>
                 <div class="admin-err hidden" id="adminErr"></div>
             </div>
@@ -811,7 +821,7 @@
 
 <script>
     // =====================================================
-    // SUPABASE CONFIG (USANDO SUA CONEXÃO EXISTENTE)
+    // SUPABASE CONFIG
     // =====================================================
     const SUPABASE_URL = "https://xfjhbqyynbpozrpvvbxq.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhmamhicXl5bmJwb3pycHZ2YnhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY5MTYxOTYsImV4cCI6MjA5MjQ5MjE5Nn0.IWVrNheMDIZblqcyMUaR4-QD2Up6xykhI_HtrtUjpZw";
@@ -821,8 +831,8 @@
     // =====================================================
     // ESTADO GLOBAL
     // =====================================================
-    let usuarioAtual = null;      // { id, nome, cpf, cargo, admin }
-    let cargoAtual = 'c1';
+    let usuarioAtual = null;      // { id, nome, cpf, cargo, ativo }
+    let cargoAtual = 'consultor1';
     let fatorQualidade = 0.05;
     let historico = [];
 
@@ -849,9 +859,619 @@
     }
 
     // =====================================================
-    // LOGIN
+    // LOGIN (Chama a função verificar_login do Supabase)
     // =====================================================
     async function login() {
         const cpf = document.getElementById('loginCpf').value.trim();
         const senha = document.getElementById('loginSenha').value;
-        const errEl = document.getElementById
+        const errEl = document.getElementById('loginError');
+
+        if (!cpf || !senha) {
+            errEl.style.display = 'block';
+            errEl.querySelector('span')?.remove();
+            errEl.innerHTML = '❌ Preencha CPF e senha.';
+            return;
+        }
+
+        try {
+            // Chama a função RPC verificar_login do Supabase
+            const { data, error } = await supabase.rpc('verificar_login', {
+                p_cpf: cpf,
+                p_senha: senha
+            });
+
+            if (error) throw error;
+
+            if (!data || data.length === 0) {
+                errEl.style.display = 'block';
+                errEl.innerHTML = '❌ CPF ou senha incorretos.';
+                document.getElementById('loginSenha').value = '';
+                return;
+            }
+
+            const user = data[0];
+            usuarioAtual = {
+                id: user.id,
+                nome: user.nome,
+                cpf: user.cpf,
+                cargo: user.cargo,
+                ativo: user.ativo
+            };
+
+            // Atualiza estado
+            cargoAtual = user.cargo;
+            
+            // Atualiza UI
+            document.getElementById('barNome').textContent = user.nome.split(' ')[0];
+            
+            // Admin? (apenas Henrique é admin ou quem tem cargo especial)
+            const isAdmin = user.cpf === '000.000.000-00' || user.nome.toLowerCase().includes('henrique');
+            document.getElementById('btnAdmin').classList.toggle('hidden', !isAdmin);
+            
+            // Seleciona o cargo correto nos botões
+            document.querySelectorAll('.cargo-btn').forEach(btn => {
+                btn.classList.remove('on');
+                if (btn.dataset.cargo === user.cargo) {
+                    btn.classList.add('on');
+                }
+            });
+            
+            atualizarCamposPorCargo(user.cargo);
+            
+            // Esconde login, mostra app
+            document.getElementById('loginScreen').style.display = 'none';
+            document.getElementById('appScreen').style.display = 'block';
+            
+            // Carrega histórico do usuário
+            await carregarHistorico();
+            
+            toast(`Bem-vindo, ${user.nome}! 👋`);
+            
+        } catch (err) {
+            console.error('Erro no login:', err);
+            errEl.style.display = 'block';
+            errEl.innerHTML = '❌ Erro ao conectar com o servidor.';
+        }
+    }
+
+    // =====================================================
+    // LOGOUT
+    // =====================================================
+    function logout() {
+        usuarioAtual = null;
+        cargoAtual = 'consultor1';
+        historico = [];
+        document.getElementById('loginScreen').style.display = 'flex';
+        document.getElementById('appScreen').style.display = 'none';
+        document.getElementById('loginCpf').value = '';
+        document.getElementById('loginSenha').value = '';
+        document.getElementById('resultado').style.display = 'none';
+        document.getElementById('loginError').style.display = 'none';
+    }
+
+    // =====================================================
+    // ATUALIZAR CAMPOS POR CARGO
+    // =====================================================
+    function atualizarCamposPorCargo(cargo) {
+        const isConsultor = cargo === 'consultor1' || cargo === 'consultor2';
+        const isLider = cargo === 'lider';
+        const isConsultor2 = cargo === 'consultor2';
+        
+        // Receita: todos veem
+        document.getElementById('gRec').classList.remove('hidden');
+        
+        // Meta e Vendas: apenas Líder vê (e Consultor2 vê também?)
+        document.getElementById('gMeta').classList.toggle('hidden', !isLider);
+        document.getElementById('gVend').classList.toggle('hidden', !isLider);
+        
+        // Qualidade: apenas Consultores
+        document.getElementById('gQual').classList.toggle('hidden', !isConsultor);
+        
+        // Indicações: Consultor2 e Líder
+        document.getElementById('gInd').classList.toggle('hidden', !(isConsultor2 || isLider));
+        
+        // HC Prêmio: apenas Líder
+        document.getElementById('gHcPremio').classList.toggle('hidden', !isLider);
+    }
+
+    function setCargo(cargo, btn) {
+        cargoAtual = cargo;
+        document.querySelectorAll('.cargo-btn').forEach(b => b.classList.remove('on'));
+        btn.classList.add('on');
+        atualizarCamposPorCargo(cargo);
+        document.getElementById('resultado').style.display = 'none';
+    }
+
+    function setQualidade(fator, el) {
+        fatorQualidade = fator;
+        document.querySelectorAll('.qp').forEach(q => q.classList.remove('on'));
+        el.classList.add('on');
+    }
+
+    // =====================================================
+    // TABELAS DE CÁLCULO
+    // =====================================================
+    function getFatorComissao(receita) {
+        if (receita <= 1000) return 0.15;
+        if (receita <= 1350) return 0.20;
+        if (receita <= 2500) return 0.40;
+        if (receita <= 3000) return 0.45;
+        if (receita <= 3500) return 0.55;
+        if (receita <= 4000) return 0.65;
+        if (receita <= 4500) return 0.75;
+        if (receita <= 5000) return 1.00;
+        return 1.20;
+    }
+
+    function getBonusLider(percentual) {
+        if (percentual < 85) return 0;
+        if (percentual < 100) return 600;
+        // Base de 1000 + adicional a cada 5% acima de 100
+        let adicional = 0;
+        if (percentual >= 100) {
+            const acima = Math.min(percentual - 100, 40); // máximo 140%
+            adicional = Math.floor(acima / 5) * 200;
+        }
+        return 1000 + adicional;
+    }
+
+    function getBonusIndicacao(receitaIndicacao, percentualMeta) {
+        if (percentualMeta >= 100) return receitaIndicacao * 0.15;
+        if (percentualMeta >= 80) return receitaIndicacao * 0.10;
+        return 0;
+    }
+
+    // =====================================================
+    // CALCULAR E SALVAR NO HISTÓRICO
+    // =====================================================
+    async function calcular() {
+        if (!usuarioAtual) {
+            toast('❌ Faça login novamente.');
+            return;
+        }
+
+        const receita = parseFloat(document.getElementById('vRec').value) || 0;
+        const meta = parseInt(document.getElementById('vMeta').value) || 0;
+        const vendas = parseInt(document.getElementById('vVend').value) || 0;
+        const indicacoes = parseFloat(document.getElementById('vInd').value) || 0;
+        const hcPremio = document.getElementById('vHcPremio')?.checked || false;
+
+        let total = 0;
+        let badge = '';
+        let info = '';
+        let html = '';
+        let percentual = 0;
+        let bonusNovato = false;
+        let fator = 0;
+        let rvBase = 0;
+        let acelerador = 0;
+        let bonusTime = 0;
+        let bonusInd = 0;
+
+        try {
+            if (cargoAtual === 'consultor1') {
+                if (receita <= 0) { toast('⚠️ Informe a receita.'); return; }
+                
+                badge = 'CONSULTOR I PAP';
+                fator = getFatorComissao(receita);
+                rvBase = receita * fator;
+                acelerador = rvBase * fatorQualidade;
+                total = rvBase + acelerador;
+                
+                if (total < 300) {
+                    total = 300;
+                    bonusNovato = true;
+                }
+                
+                info = `Fator ${(fator * 100).toFixed(0)}% · Acelerador ${(fatorQualidade * 100).toFixed(0)}%`;
+                html = `
+                    <div class="bk-row"><span class="bk-l">💰 Receita do mês</span><span class="bk-r">${fmt(receita)}</span></div>
+                    <div class="bk-row"><span class="bk-l">📊 Fator de comissão</span><span class="bk-r hi">${(fator * 100).toFixed(0)}%</span></div>
+                    <div class="bk-row"><span class="bk-l">🏆 RV Vendeu & Ganhou</span><span class="bk-r">${fmt(rvBase)}</span></div>
+                    <div class="bk-row"><span class="bk-l">✨ Acelerador (+${(fatorQualidade * 100).toFixed(0)}%)</span><span class="bk-r ${fatorQualidade > 0 ? 'ok' : 'warn'}">${fmt(acelerador)}</span></div>
+                    <div class="bk-row"><span class="bk-l">💎 RV Total</span><span class="bk-r ok">${fmt(total)}</span></div>
+                `;
+                
+            } else if (cargoAtual === 'consultor2') {
+                if (receita <= 0) { toast('⚠️ Informe a receita.'); return; }
+                
+                badge = 'CONSULTOR II PAP';
+                fator = getFatorComissao(receita);
+                rvBase = receita * fator;
+                acelerador = rvBase * fatorQualidade;
+                total = rvBase + acelerador;
+                
+                if (total < 300) {
+                    total = 300;
+                    bonusNovato = true;
+                }
+                
+                info = `Fator ${(fator * 100).toFixed(0)}% · Acelerador ${(fatorQualidade * 100).toFixed(0)}%`;
+                html = `
+                    <div class="bk-row"><span class="bk-l">💰 Receita do mês</span><span class="bk-r">${fmt(receita)}</span></div>
+                    <div class="bk-row"><span class="bk-l">📊 Fator de comissão</span><span class="bk-r hi">${(fator * 100).toFixed(0)}%</span></div>
+                    <div class="bk-row"><span class="bk-l">🏆 RV Vendeu & Ganhou</span><span class="bk-r">${fmt(rvBase)}</span></div>
+                    <div class="bk-row"><span class="bk-l">✨ Acelerador (+${(fatorQualidade * 100).toFixed(0)}%)</span><span class="bk-r ${fatorQualidade > 0 ? 'ok' : 'warn'}">${fmt(acelerador)}</span></div>
+                    <div class="bk-row"><span class="bk-l">💎 RV Total</span><span class="bk-r ok">${fmt(total)}</span></div>
+                `;
+                
+            } else if (cargoAtual === 'lider') {
+                if (meta <= 0) { toast('⚠️ Informe a meta de quantidade.'); return; }
+                
+                badge = 'LÍDER PAP';
+                percentual = (vendas / meta) * 100;
+                const bonusBase = getBonusLider(percentual);
+                bonusInd = getBonusIndicacao(indicacoes, percentual);
+                total = bonusBase + bonusInd;
+                if (hcPremio) total += 1000;
+                
+                info = `Atingimento ${percentual.toFixed(1)}% · Base ${fmt(bonusBase)}`;
+                
+                let statusHtml = '';
+                if (percentual < 85) statusHtml = '<span style="color:var(--bad)">✗ Não atingida</span>';
+                else if (percentual < 100) statusHtml = '<span style="color:var(--warn)">⚡ Parcial</span>';
+                else statusHtml = '<span style="color:var(--ok)">✓ Atingida</span>';
+                
+                html = `
+                    <div class="bk-row"><span class="bk-l">🎯 Status da Meta</span><span class="bk-r">${statusHtml} (${percentual.toFixed(1)}%)</span></div>
+                    <div class="bk-row"><span class="bk-l">📦 Meta de quantidade</span><span class="bk-r">${meta} vendas</span></div>
+                    <div class="bk-row"><span class="bk-l">✅ Vendas realizadas</span><span class="bk-r">${vendas} vendas</span></div>
+                    <div class="bk-row"><span class="bk-l">🏆 RV por atingimento</span><span class="bk-r ${percentual >= 100 ? 'ok' : percentual >= 85 ? 'warn' : 'bad'}">${fmt(bonusBase)}</span></div>
+                    ${indicacoes > 0 ? `<div class="bk-row"><span class="bk-l">🤝 Bônus Indicações</span><span class="bk-r ok">${fmt(bonusInd)}</span></div>` : ''}
+                    ${hcPremio ? `<div class="bk-row"><span class="bk-l">🏆 Prêmio HC < orçado</span><span class="bk-r ok">${fmt(1000)}</span></div>` : ''}
+                    <div class="bk-row"><span class="bk-l">💎 RV Total</span><span class="bk-r ok">${fmt(total)}</span></div>
+                `;
+                
+                // Mostrar barra de progresso
+                document.getElementById('progArea').classList.remove('hidden');
+                const pctExib = Math.min(percentual, 140);
+                document.getElementById('progFill').style.width = (pctExib / 140 * 100) + '%';
+                document.getElementById('progPct').textContent = percentual.toFixed(1) + '%';
+            }
+            
+            // Atualiza UI do resultado
+            document.getElementById('rBadge').textContent = badge;
+            document.getElementById('rTotal').innerHTML = `<small>R$</small> ${fmt(total).replace('R$ ', '')}`;
+            document.getElementById('rInfo').textContent = info;
+            document.getElementById('bkBody').innerHTML = html;
+            
+            if (cargoAtual !== 'lider') {
+                document.getElementById('progArea').classList.add('hidden');
+            }
+            
+            document.getElementById('boxNovato').classList.toggle('hidden', !bonusNovato);
+            document.getElementById('resultado').style.display = 'block';
+            document.getElementById('resultado').scrollIntoView({ behavior: 'smooth', block: 'start' });
+            
+            // Salvar no histórico do Supabase
+            await salvarHistorico({
+                cargo: cargoAtual,
+                receita,
+                fator_comissao: fator,
+                rv_base: rvBase,
+                indice_qualidade: fatorQualidade > 0 ? `>${(fatorQualidade * 100).toFixed(0)}%` : '≤80%',
+                fator_qualidade: fatorQualidade,
+                acelerador_qualidade: acelerador,
+                meta_quantidade: meta,
+                vendas_realizadas: vendas,
+                percentual_atingido: percentual,
+                bonus_meta_time: bonusTime,
+                receita_indicacoes: indicacoes,
+                bonus_indicacoes: bonusInd,
+                rv_total: total,
+                bonus_novato_aplicado: bonusNovato
+            });
+            
+            // Atualiza histórico local
+            historico.unshift({
+                cargo: badge,
+                total: total,
+                data: new Date()
+            });
+            if (historico.length > 20) historico.pop();
+            renderizarHistorico();
+            
+            toast('✅ Comissão calculada e salva!');
+            
+        } catch (err) {
+            console.error('Erro no cálculo:', err);
+            toast('❌ Erro ao calcular. Tente novamente.');
+        }
+    }
+
+    // =====================================================
+    // SALVAR NO HISTÓRICO (Supabase)
+    // =====================================================
+    async function salvarHistorico(dados) {
+        if (!usuarioAtual) return;
+        
+        const payload = {
+            usuario_id: usuarioAtual.id,
+            cargo: dados.cargo,
+            receita: dados.receita || null,
+            fator_comissao: dados.fator_comissao || null,
+            rv_base: dados.rv_base || null,
+            indice_qualidade: dados.indice_qualidade || null,
+            fator_qualidade: dados.fator_qualidade || null,
+            acelerador_qualidade: dados.acelerador_qualidade || null,
+            meta_quantidade: dados.meta_quantidade || null,
+            vendas_realizadas: dados.vendas_realizadas || null,
+            percentual_atingido: dados.percentual_atingido || null,
+            bonus_meta_time: dados.bonus_meta_time || null,
+            receita_indicacoes: dados.receita_indicacoes || null,
+            bonus_indicacoes: dados.bonus_indicacoes || null,
+            rv_total: dados.rv_total,
+            bonus_novato_aplicado: dados.bonus_novato_aplicado || false
+        };
+        
+        const { error } = await supabase
+            .from('historico_calculos')
+            .insert([payload]);
+        
+        if (error) {
+            console.error('Erro ao salvar histórico:', error);
+        }
+    }
+
+    // =====================================================
+    // CARREGAR HISTÓRICO DO USUÁRIO
+    // =====================================================
+    async function carregarHistorico() {
+        if (!usuarioAtual) return;
+        
+        try {
+            const { data, error } = await supabase
+                .from('historico_calculos')
+                .select('*')
+                .eq('usuario_id', usuarioAtual.id)
+                .order('calculado_em', { ascending: false })
+                .limit(20);
+            
+            if (error) throw error;
+            
+            if (data && data.length > 0) {
+                historico = data.map(h => ({
+                    cargo: getCargoNome(h.cargo),
+                    total: h.rv_total,
+                    data: new Date(h.calculado_em)
+                }));
+            } else {
+                historico = [];
+            }
+            
+            renderizarHistorico();
+            
+        } catch (err) {
+            console.error('Erro ao carregar histórico:', err);
+        }
+    }
+    
+    function getCargoNome(cargoKey) {
+        const nomes = {
+            'consultor1': 'Consultor I',
+            'consultor2': 'Consultor II',
+            'lider': 'Líder PAP'
+        };
+        return nomes[cargoKey] || cargoKey;
+    }
+
+    function renderizarHistorico() {
+        const container = document.getElementById('histList');
+        if (!historico.length) {
+            container.innerHTML = '<div class="hist-empty">Nenhum cálculo ainda.</div>';
+            return;
+        }
+        
+        container.innerHTML = historico.map(h => `
+            <div class="hist-item">
+                <div>
+                    <div class="hi-cargo">${h.cargo}</div>
+                    <div class="hi-data">${h.data.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
+                </div>
+                <div class="hi-rv">${fmt(h.total)}</div>
+            </div>
+        `).join('');
+    }
+    
+    function limparHistoricoLocal() {
+        historico = [];
+        renderizarHistorico();
+        toast('🗑️ Histórico visual limpo.');
+    }
+
+    // =====================================================
+    // ADMIN: LISTAR USUÁRIOS
+    // =====================================================
+    async function listarUsuarios() {
+        try {
+            const { data, error } = await supabase
+                .from('usuarios')
+                .select('id, nome, cpf, cargo, ativo')
+                .order('nome');
+            
+            if (error) throw error;
+            
+            const container = document.getElementById('adminLista');
+            if (!data || data.length === 0) {
+                container.innerHTML = '<div class="hist-empty">Nenhum usuário encontrado.</div>';
+                return;
+            }
+            
+            const cargoNomes = {
+                'consultor1': 'Consultor I',
+                'consultor2': 'Consultor II',
+                'lider': 'Líder PAP'
+            };
+            
+            container.innerHTML = data.map(user => `
+                <div class="user-item ${user.cpf === '000.000.000-00' ? 'is-admin' : ''}">
+                    <div class="ui-info">
+                        <div class="ui-nome">${escapeHtml(user.nome)}</div>
+                        <div class="ui-cpf">${user.cpf}</div>
+                        <div class="ui-tags">
+                            <span class="ui-tag">${cargoNomes[user.cargo] || user.cargo}</span>
+                            ${user.cpf === '000.000.000-00' ? '<span class="ui-tag admin">Admin</span>' : ''}
+                        </div>
+                    </div>
+                    ${user.cpf !== '000.000.000-00' ? `<button class="ui-del" data-id="${user.id}" data-nome="${escapeHtml(user.nome)}">🗑</button>` : '<span style="font-size:18px">👑</span>'}
+                </div>
+            `).join('');
+            
+            // Adiciona eventos de delete
+            document.querySelectorAll('.ui-del').forEach(btn => {
+                btn.addEventListener('click', () => deletarUsuario(btn.dataset.id, btn.dataset.nome));
+            });
+            
+        } catch (err) {
+            console.error('Erro ao listar usuários:', err);
+            document.getElementById('adminLista').innerHTML = '<div class="hist-empty">Erro ao carregar usuários.</div>';
+        }
+    }
+    
+    async function deletarUsuario(id, nome) {
+        if (!confirm(`Excluir "${nome}" permanentemente?`)) return;
+        
+        try {
+            const { error } = await supabase
+                .from('usuarios')
+                .delete()
+                .eq('id', id);
+            
+            if (error) throw error;
+            
+            toast(`✅ "${nome}" removido.`);
+            await listarUsuarios();
+            
+        } catch (err) {
+            console.error('Erro ao deletar:', err);
+            toast('❌ Erro ao excluir usuário.');
+        }
+    }
+    
+    async function adicionarUsuario() {
+        const nome = document.getElementById('aNome').value.trim();
+        const cpf = document.getElementById('aCpf').value.trim();
+        const senha = document.getElementById('aSenha').value.trim();
+        const cargo = document.getElementById('aCargo').value;
+        const errEl = document.getElementById('adminErr');
+        
+        if (!nome || !cpf || !senha) {
+            errEl.textContent = 'Preencha todos os campos.';
+            errEl.classList.remove('hidden');
+            return;
+        }
+        
+        if (cpf.length < 14) {
+            errEl.textContent = 'CPF inválido (use 000.000.000-00).';
+            errEl.classList.remove('hidden');
+            return;
+        }
+        
+        try {
+            // Verifica se CPF já existe
+            const { data: existente } = await supabase
+                .from('usuarios')
+                .select('cpf')
+                .eq('cpf', cpf)
+                .single();
+            
+            if (existente) {
+                errEl.textContent = 'Já existe um usuário com esse CPF.';
+                errEl.classList.remove('hidden');
+                return;
+            }
+            
+            // Insere novo usuário
+            const { error } = await supabase
+                .from('usuarios')
+                .insert([{
+                    nome: nome,
+                    cpf: cpf,
+                    senha_hash: senha, // Será hasheado pelo trigger no DB
+                    cargo: cargo,
+                    ativo: true
+                }]);
+            
+            if (error) throw error;
+            
+            toast(`✅ "${nome}" adicionado!`);
+            
+            // Limpa formulário
+            document.getElementById('aNome').value = '';
+            document.getElementById('aCpf').value = '';
+            document.getElementById('aSenha').value = '';
+            document.getElementById('aCargo').value = 'consultor1';
+            errEl.classList.add('hidden');
+            
+            // Recarrega lista
+            await listarUsuarios();
+            
+        } catch (err) {
+            console.error('Erro ao adicionar:', err);
+            errEl.textContent = 'Erro ao adicionar usuário. Verifique o console.';
+            errEl.classList.remove('hidden');
+        }
+    }
+    
+    function abrirAdmin() {
+        document.getElementById('modalAdmin').classList.remove('hidden');
+        listarUsuarios();
+    }
+    
+    function fecharAdmin() {
+        document.getElementById('modalAdmin').classList.add('hidden');
+    }
+    
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m]);
+    }
+
+    // =====================================================
+    // EVENTOS E INICIALIZAÇÃO
+    // =====================================================
+    document.addEventListener('DOMContentLoaded', () => {
+        // Mascara CPF no login
+        const loginCpf = document.getElementById('loginCpf');
+        loginCpf.addEventListener('input', () => mascaraCPF(loginCpf));
+        
+        // Mascara CPF no admin
+        const aCpf = document.getElementById('aCpf');
+        aCpf.addEventListener('input', () => mascaraCPF(aCpf));
+        
+        // Enter no login
+        const loginSenha = document.getElementById('loginSenha');
+        loginSenha.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') login();
+        });
+        loginCpf.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') login();
+        });
+        
+        // Botões
+        document.getElementById('btnLogin').addEventListener('click', login);
+        document.getElementById('btnLogout').addEventListener('click', logout);
+        document.getElementById('btnCalcular').addEventListener('click', calcular);
+        document.getElementById('btnLimparHist').addEventListener('click', limparHistoricoLocal);
+        document.getElementById('btnAdmin').addEventListener('click', abrirAdmin);
+        document.getElementById('btnAddUser').addEventListener('click', adicionarUsuario);
+        document.getElementById('modalClose').addEventListener('click', fecharAdmin);
+        
+        // Fechar modal clicando fora
+        document.getElementById('modalAdmin').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('modalAdmin')) fecharAdmin();
+        });
+        
+        // Cargo buttons
+        document.querySelectorAll('.cargo-btn').forEach(btn => {
+            btn.addEventListener('click', () => setCargo(btn.dataset.cargo, btn));
+        });
+        
+        // Qualidade buttons
+        document.querySelectorAll('.qp').forEach(qp => {
+            qp.addEventListener('click', () => setQualidade(parseFloat(qp.dataset.qual), qp));
+        });
+    });
+</script>
+</body>
+</html>
