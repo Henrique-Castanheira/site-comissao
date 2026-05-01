@@ -69,17 +69,26 @@
       }
     }
 
-    async function rodarTestes() {
-      // PASSO 1 — cliente
-      let db;
+    let db = null;
+
+    // inicializa assim que a lib carregar
+    function initDB() {
       try {
-        const { createClient } = supabase;
-        db = createClient(URL, KEY);
-        set(1, 'ok', '✅ Cliente Supabase inicializado com sucesso.');
+        if (typeof supabase === 'undefined' || !supabase.createClient) {
+          throw new Error('Biblioteca supabase-js não carregou. Verifique sua internet.');
+        }
+        db = supabase.createClient(URL, KEY);
+        return true;
       } catch(e) {
         set(1, 'erro', '❌ Falha ao inicializar: ' + e.message);
-        return;
+        return false;
       }
+    }
+
+    async function rodarTestes() {
+      // PASSO 1 — cliente
+      if (!initDB()) return;
+      set(1, 'ok', '✅ Cliente Supabase inicializado com sucesso.');
 
       // PASSO 2 — tabela usuarios
       try {
