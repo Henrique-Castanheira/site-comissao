@@ -2,653 +2,323 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
-  <title>Terra Fibra · Calculadora RV</title>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>Terra · Calculadora RV</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
-    /* ══════════════ RESET & VARS ══════════════ */
-    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-
     :root {
-      --bg:          #08050F;
-      --card:        #110D1C;
-      --card2:       #160F24;
-      --border:      rgba(139,92,246,.18);
-      --border-hi:   rgba(139,92,246,.45);
-      --purple:      #7C3AED;
-      --purple-l:    #A78BFA;
-      --pink:        #DB2777;
-      --orange:      #EA580C;
-      --text:        #EDE9FE;
-      --muted:       #7C6F8E;
-      --success:     #22C55E;
-      --warning:     #F59E0B;
-      --danger:      #EF4444;
-      --r:           14px;
-      --r-lg:        20px;
+      --bg:      #07040F;
+      --surface: #110C1E;
+      --border:  rgba(168,85,247,.15);
+      --p1: #8B5CF6; --p2: #EC4899; --p3: #F97316;
+      --text: #F5F0FF; --muted: #6B5F80;
+      --ok: #34D399; --warn: #FBBF24; --bad: #F87171;
+      --r: 16px;
     }
-
-    html { scroll-behavior: smooth; }
-
+    *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+    html { font-size:16px; }
     body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100dvh;
-      overflow-x: hidden;
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100dvh; overflow-x: hidden;
     }
-
-    /* aura de fundo */
+    body::before {
+      content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
+      background-image: linear-gradient(rgba(139,92,246,.04) 1px,transparent 1px), linear-gradient(90deg,rgba(139,92,246,.04) 1px,transparent 1px);
+      background-size: 40px 40px;
+    }
     body::after {
-      content:'';
-      position:fixed; inset:0; pointer-events:none; z-index:0;
+      content:''; position:fixed; inset:0; z-index:0; pointer-events:none;
       background:
-        radial-gradient(ellipse 70% 55% at 10%  0%, rgba(124,58,237,.30) 0%, transparent 60%),
-        radial-gradient(ellipse 55% 45% at 95% 95%, rgba(234,88,12,.18)  0%, transparent 55%),
-        radial-gradient(ellipse 45% 35% at 55% 45%, rgba(219,39,119,.09) 0%, transparent 55%);
+        radial-gradient(ellipse 65% 50% at 15% 0%,  rgba(139,92,246,.28) 0%,transparent 60%),
+        radial-gradient(ellipse 50% 40% at 90% 100%,rgba(249,115,22,.16)  0%,transparent 55%),
+        radial-gradient(ellipse 40% 35% at 55% 50%, rgba(236,72,153,.08)  0%,transparent 55%);
     }
-
-    /* ══════════════ UTILITÁRIOS ══════════════ */
+    .z { position:relative; z-index:1; }
     .hidden { display:none !important; }
 
-    /* ══════════════ LOGIN ══════════════ */
-    #login-screen {
-      position:fixed; inset:0; z-index:200;
-      display:flex; align-items:center; justify-content:center;
-      padding:20px;
-      background: var(--bg);
-    }
-
-    .login-wrap {
-      position:relative; z-index:1;
-      width:100%; max-width:390px;
-    }
-
-    /* marca d'água */
-    .login-wrap::before {
-      content:'RV';
-      position:absolute;
-      top:-40px; right:-20px;
-      font-size:130px; font-weight:900;
-      color:rgba(124,58,237,.06);
-      letter-spacing:-6px;
-      pointer-events:none; user-select:none;
-    }
-
-    .l-card {
-      background: var(--card);
-      border:1px solid var(--border);
-      border-radius:24px;
+    /* ── LOGIN ── */
+    #login-screen { position:fixed; inset:0; z-index:200; display:flex; align-items:center; justify-content:center; padding:20px; }
+    .login-box {
+      position:relative; z-index:1; width:100%; max-width:380px;
+      background:var(--surface); border:1px solid var(--border); border-radius:24px;
       padding:36px 28px 32px;
-      box-shadow: 0 40px 80px rgba(0,0,0,.55), 0 0 0 1px rgba(124,58,237,.08);
+      box-shadow:0 32px 64px rgba(0,0,0,.6), 0 0 0 1px rgba(139,92,246,.07);
+      animation:fadeUp .5s ease both;
     }
-
-    /* logo */
-    .l-logo {
-      display:flex; align-items:center; gap:10px;
-      margin-bottom:6px;
-    }
-    .l-logo-mark {
-      width:40px; height:40px; border-radius:11px;
-      background:linear-gradient(135deg,#EA580C,#7C3AED,#DB2777);
+    .logo-row { display:flex; align-items:center; gap:11px; margin-bottom:28px; }
+    .logo-gem {
+      width:42px; height:42px; border-radius:12px; flex-shrink:0;
+      background:linear-gradient(135deg,var(--p3),var(--p1),var(--p2));
       display:flex; align-items:center; justify-content:center;
-      font-size:18px; font-weight:900; color:#fff;
-      box-shadow:0 4px 14px rgba(124,58,237,.45);
+      font-family:'Syne',sans-serif; font-size:20px; font-weight:800; color:#fff;
+      box-shadow:0 6px 20px rgba(139,92,246,.4);
     }
-    .l-logo-text {
-      font-size:24px; font-weight:900;
-      background:linear-gradient(90deg,#fff 30%,#C4B5FD);
-      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    .logo-name { font-family:'Syne',sans-serif; font-size:22px; font-weight:800; background:linear-gradient(90deg,#fff 20%,#C4B5FD); -webkit-background-clip:text; -webkit-text-fill-color:transparent; line-height:1; }
+    .logo-tag  { font-size:10px; color:var(--muted); letter-spacing:.06em; margin-top:2px; }
+    .login-title { font-family:'Syne',sans-serif; font-size:19px; font-weight:700; margin-bottom:4px; }
+    .login-sub   { font-size:13px; color:var(--muted); margin-bottom:26px; }
+    .lf { margin-bottom:14px; }
+    .lf label { display:block; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin-bottom:7px; }
+    .lf-wrap { position:relative; }
+    .lf-icon { position:absolute; left:13px; top:50%; transform:translateY(-50%); font-size:15px; pointer-events:none; }
+    .lf-wrap input {
+      width:100%; padding:13px 13px 13px 40px;
+      background:rgba(255,255,255,.04); border:1px solid rgba(139,92,246,.18); border-radius:12px; outline:none;
+      color:var(--text); font-family:'DM Sans',sans-serif; font-size:15px; font-weight:500;
+      transition:border-color .2s,box-shadow .2s;
     }
-    .l-logo-sub { font-size:11px; color:var(--muted); margin-bottom:28px; }
+    .lf-wrap input:focus { border-color:var(--p1); box-shadow:0 0 0 3px rgba(139,92,246,.13); }
+    .lf-wrap input::placeholder { color:rgba(107,95,128,.45); font-weight:400; }
+    .btn-login {
+      width:100%; padding:15px;
+      background:linear-gradient(135deg,var(--p1),var(--p2)); border:none; border-radius:12px;
+      color:#fff; font-family:'Syne',sans-serif; font-size:14px; font-weight:700; letter-spacing:.04em;
+      cursor:pointer; margin-top:6px; transition:transform .15s,opacity .2s; position:relative; overflow:hidden;
+    }
+    .btn-login::after { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(255,255,255,.12),transparent); }
+    .btn-login:active { transform:scale(.98); opacity:.9; }
+    .login-err { display:none; align-items:center; gap:8px; margin-top:12px; padding:11px 14px; background:rgba(248,113,113,.08); border:1px solid rgba(248,113,113,.22); border-radius:10px; color:#FCA5A5; font-size:13px; }
+    .login-err.show { display:flex; }
+    .login-foot { text-align:center; margin-top:20px; font-size:11px; color:rgba(107,95,128,.45); }
 
-    .l-title { font-size:20px; font-weight:800; margin-bottom:4px; }
-    .l-desc  { font-size:13px; color:var(--muted); margin-bottom:28px; }
-
-    /* campos */
-    .l-field { margin-bottom:14px; }
-    .l-field label {
-      display:block; font-size:11px; font-weight:700;
-      text-transform:uppercase; letter-spacing:.09em;
-      color:var(--muted); margin-bottom:8px;
-    }
-    .l-field-wrap { position:relative; }
-    .l-field-wrap .fi {
-      position:absolute; left:14px; top:50%; transform:translateY(-50%);
-      font-size:15px; pointer-events:none;
-    }
-    .l-field-wrap input {
-      width:100%; padding:14px 14px 14px 42px;
-      background:rgba(255,255,255,.04);
-      border:1px solid rgba(139,92,246,.2);
-      border-radius:12px; outline:none;
-      color:var(--text); font-family:inherit; font-size:15px; font-weight:500;
-      transition:border-color .2s, box-shadow .2s;
-    }
-    .l-field-wrap input:focus {
-      border-color:var(--purple-l);
-      box-shadow:0 0 0 3px rgba(124,58,237,.14);
-    }
-    .l-field-wrap input::placeholder { color:rgba(124,111,142,.45); font-weight:400; }
-
-    /* botão login */
-    .l-btn {
-      width:100%; padding:16px;
-      background:linear-gradient(135deg,var(--purple),var(--pink));
-      border:none; border-radius:12px;
-      color:#fff; font-family:inherit; font-size:15px; font-weight:700;
-      cursor:pointer; margin-top:6px;
-      transition:transform .15s, opacity .2s;
-      position:relative; overflow:hidden;
-    }
-    .l-btn::after { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(255,255,255,.12),transparent); }
-    .l-btn:active { transform:scale(.98); opacity:.9; }
-    .l-btn:disabled { opacity:.6; cursor:not-allowed; }
-
-    /* loader spinner inline */
-    .l-btn .spinner {
-      display:inline-block; width:16px; height:16px;
-      border:2px solid rgba(255,255,255,.3);
-      border-top-color:#fff; border-radius:50%;
-      animation:spin .6s linear infinite;
-      vertical-align:middle; margin-right:8px;
-    }
-
-    @keyframes spin { to { transform:rotate(360deg); } }
-
-    /* erro */
-    .l-error {
-      margin-top:12px; padding:12px 16px;
-      background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.25);
-      border-radius:10px; color:#FCA5A5; font-size:13px;
-      display:none; align-items:center; gap:8px;
-    }
-    .l-error.show { display:flex; }
-
-    .l-footer-note {
-      text-align:center; margin-top:20px;
-      font-size:11px; color:rgba(124,111,142,.5);
-    }
-
-    /* ══════════════ APP ══════════════ */
+    /* ── APP ── */
     #app { display:none; position:relative; z-index:1; min-height:100dvh; }
+    .app-bar { position:sticky; top:0; z-index:50; background:rgba(7,4,15,.8); backdrop-filter:blur(18px); border-bottom:1px solid var(--border); }
+    .app-bar-inner { max-width:520px; margin:0 auto; padding:0 18px; height:56px; display:flex; align-items:center; justify-content:space-between; }
+    .bar-logo { display:flex; align-items:center; gap:8px; }
+    .bar-gem { width:28px; height:28px; border-radius:7px; background:linear-gradient(135deg,var(--p3),var(--p1)); display:flex; align-items:center; justify-content:center; font-family:'Syne',sans-serif; font-size:12px; font-weight:800; color:#fff; }
+    .bar-name { font-family:'Syne',sans-serif; font-size:16px; font-weight:800; background:linear-gradient(90deg,#fff,#C4B5FD); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    .bar-right { display:flex; align-items:center; gap:8px; }
+    .bar-chip { padding:5px 12px; background:rgba(139,92,246,.1); border:1px solid rgba(139,92,246,.2); border-radius:20px; font-size:12px; font-weight:600; color:#C4B5FD; }
+    .bar-out { background:none; border:none; color:var(--muted); font-size:18px; cursor:pointer; padding:5px; border-radius:8px; transition:color .2s; }
+    .bar-out:hover { color:var(--bad); }
 
-    /* HEADER */
-    .app-header {
-      position:sticky; top:0; z-index:50;
-      background:rgba(8,5,15,.82); backdrop-filter:blur(20px);
-      border-bottom:1px solid var(--border);
-    }
-    .header-inner {
-      max-width:500px; margin:0 auto;
-      height:58px; padding:0 18px;
-      display:flex; align-items:center; justify-content:space-between;
-    }
-    .h-logo { display:flex; align-items:center; gap:8px; }
-    .h-logo-mark {
-      width:30px; height:30px; border-radius:8px;
-      background:linear-gradient(135deg,#EA580C,#7C3AED);
-      display:flex; align-items:center; justify-content:center;
-      font-size:13px; font-weight:900; color:#fff;
-    }
-    .h-logo-text {
-      font-size:17px; font-weight:900;
-      background:linear-gradient(90deg,#fff,#C4B5FD);
-      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
-    }
-    .h-right { display:flex; align-items:center; gap:8px; }
-    .h-user {
-      display:flex; align-items:center; gap:6px;
-      padding:5px 11px;
-      background:rgba(124,58,237,.12); border:1px solid rgba(124,58,237,.22);
-      border-radius:20px; font-size:12px; font-weight:600; color:#C4B5FD;
-    }
-    .h-logout {
-      background:none; border:none; color:var(--muted);
-      cursor:pointer; padding:6px; border-radius:8px;
-      font-size:17px; transition:color .2s;
-    }
-    .h-logout:hover { color:var(--danger); }
-
-    /* MAIN */
-    .app-main {
-      max-width:500px; margin:0 auto;
-      padding:24px 16px 110px;
-    }
-
-    /* SEÇÃO HERO */
-    .hero { margin-bottom:22px; }
-    .hero h1 { font-size:22px; font-weight:900; letter-spacing:-.02em; }
+    .main { max-width:520px; margin:0 auto; padding:22px 16px 100px; }
+    .hero { margin-bottom:20px; }
+    .hero h1 { font-family:'Syne',sans-serif; font-size:24px; font-weight:800; letter-spacing:-.02em; }
     .hero p  { font-size:12px; color:var(--muted); margin-top:3px; }
 
-    /* CARD GENÉRICO */
-    .card {
-      background:var(--card);
-      border:1px solid var(--border);
-      border-radius:var(--r-lg);
-      padding:20px 18px;
-      margin-bottom:14px;
-    }
+    .card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r); padding:20px 18px; margin-bottom:12px; }
+    .slabel { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.09em; color:var(--muted); margin-bottom:13px; display:flex; align-items:center; gap:6px; }
+    .slabel::before { content:''; width:5px; height:5px; border-radius:50%; background:var(--p1); flex-shrink:0; }
 
-    .sec-label {
-      font-size:11px; font-weight:700;
-      text-transform:uppercase; letter-spacing:.09em;
-      color:var(--muted); margin-bottom:14px;
-      display:flex; align-items:center; gap:6px;
-    }
-    .sec-label .dot {
-      width:5px; height:5px; border-radius:50%;
-      background:var(--purple-l); flex-shrink:0;
-    }
+    .cargo-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+    .cargo-btn { padding:13px 6px; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.07); border-radius:12px; color:var(--muted); font-family:'DM Sans',sans-serif; font-size:11px; font-weight:600; cursor:pointer; text-align:center; line-height:1.35; transition:all .2s; }
+    .cargo-btn .ci { font-size:20px; display:block; margin-bottom:5px; }
+    .cargo-btn.on { background:rgba(139,92,246,.15); border-color:rgba(139,92,246,.5); color:var(--text); box-shadow:0 0 16px rgba(139,92,246,.15); }
 
-    /* TABS DE CARGO */
-    .role-grid {
-      display:grid; grid-template-columns:repeat(3,1fr); gap:8px;
-    }
-    .role-btn {
-      padding:13px 6px;
-      background:rgba(255,255,255,.03);
-      border:1px solid rgba(255,255,255,.07);
-      border-radius:12px;
-      color:var(--muted); font-family:inherit;
-      font-size:11px; font-weight:700;
-      cursor:pointer; text-align:center; line-height:1.3;
-      transition:all .2s;
-    }
-    .role-btn .ri { font-size:20px; display:block; margin-bottom:5px; }
-    .role-btn.active {
-      background:rgba(124,58,237,.16);
-      border-color:rgba(139,92,246,.55);
-      color:var(--text);
-      box-shadow:0 0 18px rgba(124,58,237,.18);
-    }
+    .ig { margin-bottom:13px; }
+    .ig label { display:block; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.07em; color:var(--muted); margin-bottom:7px; }
+    .iw { position:relative; }
+    .ipfx { position:absolute; left:13px; top:50%; transform:translateY(-50%); font-size:13px; font-weight:700; color:var(--muted); pointer-events:none; }
+    .iw input { width:100%; padding:13px 13px 13px 34px; background:rgba(255,255,255,.04); border:1px solid rgba(139,92,246,.18); border-radius:12px; outline:none; color:var(--text); font-family:'DM Sans',sans-serif; font-size:16px; font-weight:600; transition:border-color .2s,box-shadow .2s; }
+    .iw input.np { padding-left:13px; }
+    .iw input:focus { border-color:var(--p1); box-shadow:0 0 0 3px rgba(139,92,246,.12); }
+    .iw input::placeholder { color:rgba(107,95,128,.35); font-weight:400; }
 
-    /* INPUT GROUP */
-    .igroup { margin-bottom:14px; }
-    .igroup label {
-      display:block; font-size:11px; font-weight:700;
-      text-transform:uppercase; letter-spacing:.07em;
-      color:var(--muted); margin-bottom:7px;
-    }
-    .iwrap { position:relative; }
-    .ipfx {
-      position:absolute; left:13px; top:50%; transform:translateY(-50%);
-      font-size:13px; font-weight:700; color:var(--muted); pointer-events:none;
-    }
-    .iwrap input {
-      width:100%; padding:13px 13px 13px 35px;
-      background:rgba(255,255,255,.04);
-      border:1px solid rgba(139,92,246,.18);
-      border-radius:12px; outline:none;
-      color:var(--text); font-family:inherit;
-      font-size:16px; font-weight:700;
-      transition:border-color .2s, box-shadow .2s;
-    }
-    .iwrap input.no-pfx { padding-left:13px; }
-    .iwrap input:focus {
-      border-color:var(--purple-l);
-      box-shadow:0 0 0 3px rgba(124,58,237,.12);
-    }
-    .iwrap input::placeholder { color:rgba(124,111,142,.35); font-weight:400; }
+    .q-row { display:grid; grid-template-columns:repeat(4,1fr); gap:7px; }
+    .qp { padding:11px 4px; text-align:center; background:rgba(255,255,255,.03); border:1px solid rgba(255,255,255,.07); border-radius:10px; cursor:pointer; transition:all .2s; }
+    .qp .ql { font-size:11px; font-weight:600; color:var(--muted); display:block; }
+    .qp .qv { font-size:13px; font-weight:800; color:var(--muted); display:block; margin-top:2px; }
+    .qp.on { background:rgba(52,211,153,.1); border-color:rgba(52,211,153,.3); }
+    .qp.on .ql, .qp.on .qv { color:var(--ok); }
 
-    /* QUALIDADE PILLS */
-    .q-grid {
-      display:grid; grid-template-columns:repeat(4,1fr); gap:7px;
-    }
-    .q-pill {
-      padding:11px 4px; text-align:center;
-      background:rgba(255,255,255,.03);
-      border:1px solid rgba(255,255,255,.07);
-      border-radius:10px; cursor:pointer;
-      transition:all .2s;
-    }
-    .q-pill .ql { font-size:11px; font-weight:700; color:var(--muted); display:block; }
-    .q-pill .qb { font-size:13px; font-weight:800; color:var(--muted); display:block; margin-top:2px; }
-    .q-pill.active {
-      background:rgba(34,197,94,.1);
-      border-color:rgba(34,197,94,.32);
-    }
-    .q-pill.active .ql,
-    .q-pill.active .qb { color:#4ADE80; }
-
-    /* BOTÃO CALCULAR */
-    .btn-calc {
-      width:100%; padding:18px;
-      background:linear-gradient(135deg,#7C3AED,#DB2777,#EA580C);
-      background-size:200% 200%;
-      animation:gradShift 5s ease infinite;
-      border:none; border-radius:14px;
-      color:#fff; font-family:inherit;
-      font-size:15px; font-weight:800;
-      cursor:pointer; letter-spacing:.02em;
-      transition:transform .15s, opacity .2s;
-      position:relative; overflow:hidden;
-      margin-bottom:22px;
-    }
+    .btn-calc { width:100%; padding:17px; background:linear-gradient(135deg,#7C3AED,#DB2777,#EA580C); background-size:200%; animation:gradMove 5s ease infinite; border:none; border-radius:14px; color:#fff; font-family:'Syne',sans-serif; font-size:15px; font-weight:800; letter-spacing:.03em; cursor:pointer; margin-bottom:20px; transition:transform .15s,opacity .2s; position:relative; overflow:hidden; }
     .btn-calc::after { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(255,255,255,.12),transparent); }
     .btn-calc:active { transform:scale(.98); opacity:.9; }
+    @keyframes gradMove { 0%,100%{background-position:0% 50%} 50%{background-position:100% 50%} }
 
-    @keyframes gradShift {
-      0%,100% { background-position:0% 50%; }
-      50%      { background-position:100% 50%; }
-    }
-
-    /* ══ RESULTADO ══ */
+    /* resultado */
     #resultado { display:none; }
+    .res-hero { background:linear-gradient(135deg,rgba(139,92,246,.35),rgba(236,72,153,.2)); border:1px solid rgba(139,92,246,.35); border-radius:var(--r); padding:26px 22px; text-align:center; margin-bottom:12px; position:relative; overflow:hidden; animation:fadeUp .35s ease both; }
+    .res-hero::before { content:''; position:absolute; top:-50px; right:-50px; width:140px; height:140px; background:rgba(139,92,246,.15); border-radius:50%; filter:blur(35px); }
+    .res-badge { display:inline-block; padding:4px 14px; background:rgba(255,255,255,.1); border-radius:20px; font-size:10px; font-weight:700; letter-spacing:.08em; color:#C4B5FD; text-transform:uppercase; margin-bottom:14px; }
+    .res-lbl { font-size:11px; color:rgba(245,240,255,.45); text-transform:uppercase; letter-spacing:.1em; }
+    .res-num { font-family:'Syne',sans-serif; font-size:48px; font-weight:800; color:#fff; letter-spacing:-.03em; line-height:1; margin:6px 0 4px; }
+    .res-num small { font-size:22px; color:#A78BFA; margin-right:3px; }
+    .res-info { font-size:12px; color:rgba(167,139,250,.55); }
 
-    .res-hero {
-      background:linear-gradient(135deg,rgba(124,58,237,.4),rgba(219,39,119,.25));
-      border:1px solid rgba(139,92,246,.35);
-      border-radius:var(--r-lg); padding:26px 22px;
-      text-align:center; margin-bottom:12px;
-      position:relative; overflow:hidden;
-      animation: fadeUp .4s ease;
-    }
-    .res-hero::before {
-      content:''; position:absolute;
-      top:-40px; right:-40px; width:130px; height:130px;
-      background:rgba(124,58,237,.18); border-radius:50%;
-      filter:blur(30px);
-    }
-
-    .res-badge {
-      display:inline-block; padding:4px 14px;
-      background:rgba(255,255,255,.1); border-radius:20px;
-      font-size:11px; font-weight:700; color:#C4B5FD;
-      margin-bottom:14px; letter-spacing:.04em; text-transform:uppercase;
-    }
-    .res-lbl { font-size:11px; font-weight:600; color:rgba(237,233,254,.5); text-transform:uppercase; letter-spacing:.1em; }
-    .res-val {
-      font-size:46px; font-weight:900; color:#fff;
-      letter-spacing:-.03em; line-height:1; margin:6px 0;
-    }
-    .res-val small { font-size:22px; font-weight:700; color:#A78BFA; margin-right:4px; }
-    .res-sub { font-size:12px; color:rgba(167,139,250,.6); }
-
-    /* BREAKDOWN */
-    .bk-card {
-      background:var(--card); border:1px solid var(--border);
-      border-radius:var(--r-lg); overflow:hidden;
-      margin-bottom:12px; animation:fadeUp .4s .05s ease both;
-    }
-    .bk-title {
-      padding:13px 18px;
-      font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.09em;
-      color:var(--muted); border-bottom:1px solid rgba(139,92,246,.1);
-    }
-    .bk-row {
-      display:flex; align-items:center;
-      justify-content:space-between;
-      padding:13px 18px;
-      border-bottom:1px solid rgba(255,255,255,.03);
-      font-size:13px;
-    }
+    .bk { background:var(--surface); border:1px solid var(--border); border-radius:var(--r); overflow:hidden; margin-bottom:12px; animation:fadeUp .35s .06s ease both; }
+    .bk-hd { padding:13px 18px; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.09em; color:var(--muted); border-bottom:1px solid rgba(139,92,246,.08); }
+    .bk-row { display:flex; align-items:center; justify-content:space-between; padding:13px 18px; border-bottom:1px solid rgba(255,255,255,.03); font-size:13px; gap:12px; }
     .bk-row:last-child { border-bottom:none; }
-    .bk-lbl { color:var(--muted); font-weight:500; display:flex; align-items:center; gap:8px; }
-    .bk-val { font-weight:800; color:var(--text); }
-    .bk-val.s { color:#4ADE80; }
-    .bk-val.w { color:#FCD34D; }
-    .bk-val.d { color:#F87171; }
-    .bk-val.a { color:#A78BFA; }
+    .bk-l { color:var(--muted); font-weight:500; display:flex; align-items:center; gap:8px; flex:1; }
+    .bk-r { font-weight:700; color:var(--text); white-space:nowrap; }
+    .bk-r.ok   { color:var(--ok); }
+    .bk-r.warn { color:var(--warn); }
+    .bk-r.bad  { color:var(--bad); }
+    .bk-r.hi   { color:#A78BFA; }
 
-    /* BARRA DE PROGRESSO */
-    .prog-wrap { padding:14px 18px; border-top:1px solid rgba(139,92,246,.1); }
-    .prog-labels { display:flex; justify-content:space-between; font-size:11px; color:var(--muted); margin-bottom:7px; }
+    .prog-area { padding:14px 18px; border-top:1px solid rgba(139,92,246,.08); }
+    .prog-top { display:flex; justify-content:space-between; font-size:11px; color:var(--muted); margin-bottom:8px; }
     .prog-bg { height:6px; background:rgba(255,255,255,.07); border-radius:10px; overflow:hidden; }
-    .prog-fill { height:100%; border-radius:10px; background:linear-gradient(90deg,var(--purple),var(--pink)); transition:width .6s ease; }
+    .prog-fill { height:100%; border-radius:10px; background:linear-gradient(90deg,var(--p1),var(--p2)); transition:width .6s cubic-bezier(.4,0,.2,1); }
 
-    /* INFO BOX */
-    .info-box {
-      padding:13px 16px;
-      background:rgba(124,58,237,.08);
-      border:1px solid rgba(139,92,246,.2);
-      border-radius:12px; font-size:12px; color:#C4B5FD; line-height:1.6;
-      margin-bottom:12px; animation:fadeUp .4s .1s ease both;
-    }
+    .box-novato { padding:13px 16px; background:rgba(139,92,246,.08); border:1px solid rgba(139,92,246,.2); border-radius:12px; font-size:12px; color:#C4B5FD; line-height:1.6; margin-bottom:12px; animation:fadeUp .35s .1s ease both; }
 
-    /* HISTÓRICO */
-    .hist-card {
-      background:var(--card); border:1px solid var(--border);
-      border-radius:var(--r-lg); overflow:hidden;
-      animation:fadeUp .4s .15s ease both;
-    }
-    .hist-header {
-      padding:14px 18px; display:flex; align-items:center; justify-content:space-between;
-      border-bottom:1px solid rgba(139,92,246,.1);
-    }
-    .hist-header span { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.09em; color:var(--muted); }
-    .hist-header button {
-      font-size:11px; font-weight:700; color:var(--purple-l);
-      background:none; border:none; cursor:pointer; padding:4px 8px;
-      border-radius:6px; transition:background .2s;
-    }
-    .hist-header button:hover { background:rgba(124,58,237,.12); }
-
-    .hist-list { max-height:320px; overflow-y:auto; }
-    .hist-item {
-      padding:13px 18px;
-      border-bottom:1px solid rgba(255,255,255,.03);
-      display:flex; align-items:center; justify-content:space-between;
-      cursor:pointer; transition:background .15s;
-    }
-    .hist-item:hover { background:rgba(255,255,255,.02); }
+    .hist { background:var(--surface); border:1px solid var(--border); border-radius:var(--r); overflow:hidden; animation:fadeUp .35s .14s ease both; }
+    .hist-hd { padding:13px 18px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid rgba(139,92,246,.08); }
+    .hist-hd span { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:.09em; color:var(--muted); }
+    .hist-hd button { font-size:11px; font-weight:700; color:var(--p1); background:none; border:none; cursor:pointer; padding:4px 8px; border-radius:6px; transition:background .2s; }
+    .hist-hd button:hover { background:rgba(139,92,246,.1); }
+    .hist-list { max-height:280px; overflow-y:auto; }
+    .hist-item { display:flex; align-items:center; justify-content:space-between; padding:12px 18px; border-bottom:1px solid rgba(255,255,255,.03); font-size:13px; }
     .hist-item:last-child { border-bottom:none; }
-    .hi-left .hi-cargo  { font-size:12px; font-weight:700; color:var(--text); }
-    .hi-left .hi-data   { font-size:11px; color:var(--muted); margin-top:2px; }
-    .hi-right .hi-rv    { font-size:14px; font-weight:800; color:#A78BFA; }
+    .hi-cargo { font-weight:600; color:var(--text); }
+    .hi-data  { font-size:11px; color:var(--muted); margin-top:2px; }
+    .hi-rv    { font-family:'Syne',sans-serif; font-weight:700; color:#A78BFA; }
     .hist-empty { padding:24px; text-align:center; font-size:13px; color:var(--muted); }
 
-    /* FOOTER */
-    .app-footer {
-      position:fixed; bottom:0; left:0; right:0;
-      padding:10px 20px 18px;
-      background:rgba(8,5,15,.88); backdrop-filter:blur(20px);
-      border-top:1px solid var(--border);
-      text-align:center; font-size:11px; color:rgba(124,111,142,.45);
-    }
-    .app-footer a { color:rgba(167,139,250,.55); text-decoration:none; }
+    .app-foot { position:fixed; bottom:0; left:0; right:0; padding:10px 20px 16px; background:rgba(7,4,15,.88); backdrop-filter:blur(18px); border-top:1px solid var(--border); text-align:center; font-size:11px; color:rgba(107,95,128,.4); }
+    .app-foot a { color:rgba(196,181,253,.45); text-decoration:none; }
 
-    /* TOAST */
-    .toast {
-      position:fixed; bottom:80px; left:50%; transform:translateX(-50%) translateY(20px);
-      padding:12px 20px; border-radius:40px;
-      background:rgba(26,16,40,.95); border:1px solid var(--border);
-      font-size:13px; font-weight:600; color:var(--text);
-      white-space:nowrap; opacity:0;
-      transition:opacity .3s, transform .3s;
-      z-index:300; backdrop-filter:blur(10px);
-      pointer-events:none;
-    }
+    .toast { position:fixed; bottom:72px; left:50%; transform:translateX(-50%) translateY(10px); padding:11px 20px; border-radius:40px; background:rgba(24,17,42,.96); border:1px solid var(--border); font-size:13px; font-weight:600; color:var(--text); white-space:nowrap; opacity:0; transition:opacity .3s,transform .3s; z-index:300; pointer-events:none; }
     .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
 
-    @keyframes fadeUp {
-      from { opacity:0; transform:translateY(14px); }
-      to   { opacity:1; transform:translateY(0); }
-    }
-
-    @media (min-width:520px) {
-      .app-main { padding:30px 24px 100px; }
-      .res-val  { font-size:52px; }
-      .hero h1  { font-size:26px; }
-    }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
+    @media(min-width:540px){ .main{padding:28px 24px 100px} .res-num{font-size:56px} }
   </style>
 </head>
 <body>
 
-<!-- ═══════════════ LOGIN ═══════════════ -->
+<!-- LOGIN -->
 <div id="login-screen">
-  <div class="login-wrap">
-    <div class="l-card">
-      <div class="l-logo">
-        <div class="l-logo-mark">T</div>
-        <span class="l-logo-text">terra</span>
+  <div class="login-box z">
+    <div class="logo-row">
+      <div class="logo-gem">T</div>
+      <div>
+        <div class="logo-name">terra</div>
+        <div class="logo-tag">CONECTADO POR VIVO FIBRA</div>
       </div>
-      <p class="l-logo-sub">conectado por VIVO FIBRA</p>
-
-      <h2 class="l-title">Bem-vindo de volta 👋</h2>
-      <p class="l-desc">Acesse sua calculadora de comissão</p>
-
-      <div class="l-field">
-        <label>CPF</label>
-        <div class="l-field-wrap">
-          <span class="fi">🪪</span>
-          <input type="text" id="l-cpf" placeholder="000.000.000-00" maxlength="14" inputmode="numeric" autocomplete="off"/>
-        </div>
-      </div>
-
-      <div class="l-field">
-        <label>Senha</label>
-        <div class="l-field-wrap">
-          <span class="fi">🔒</span>
-          <input type="password" id="l-senha" placeholder="••••••••" autocomplete="current-password"/>
-        </div>
-      </div>
-
-      <button class="l-btn" id="l-btn-entrar" onclick="fazerLogin()">Entrar na conta</button>
-
-      <div class="l-error" id="l-error">⚠️ <span id="l-error-msg">CPF ou senha incorretos.</span></div>
-
-      <p class="l-footer-note">Uso interno · Terra Fibra &copy; 2026</p>
     </div>
+    <h2 class="login-title">Bem-vindo 👋</h2>
+    <p class="login-sub">Acesse sua calculadora de RV</p>
+
+    <div class="lf">
+      <label>CPF</label>
+      <div class="lf-wrap">
+        <span class="lf-icon">🪪</span>
+        <input type="text" id="l-cpf" placeholder="000.000.000-00" maxlength="14" inputmode="numeric" autocomplete="off"/>
+      </div>
+    </div>
+
+    <div class="lf">
+      <label>Senha</label>
+      <div class="lf-wrap">
+        <span class="lf-icon">🔒</span>
+        <input type="password" id="l-pw" placeholder="••••••••" autocomplete="current-password"/>
+      </div>
+    </div>
+
+    <button class="btn-login" onclick="login()">Entrar na conta</button>
+    <div class="login-err" id="l-err">⚠️ <span>CPF ou senha incorretos.</span></div>
+    <p class="login-foot">Uso interno · Terra Fibra &copy; 2026</p>
   </div>
 </div>
 
-<!-- ═══════════════ APP ═══════════════ -->
+<!-- APP -->
 <div id="app">
-  <header class="app-header">
-    <div class="header-inner">
-      <div class="h-logo">
-        <div class="h-logo-mark">T</div>
-        <span class="h-logo-text">terra</span>
+  <header class="app-bar">
+    <div class="app-bar-inner z">
+      <div class="bar-logo">
+        <div class="bar-gem">T</div>
+        <span class="bar-name">terra</span>
       </div>
-      <div class="h-right">
-        <div class="h-user">👤 <span id="h-nome">—</span></div>
-        <button class="h-logout" onclick="sair()" title="Sair">⎋</button>
+      <div class="bar-right">
+        <div class="bar-chip">👤 <span id="bar-nome">—</span></div>
+        <button class="bar-out" onclick="logout()" title="Sair">⎋</button>
       </div>
     </div>
   </header>
 
-  <main class="app-main">
-
-    <!-- HERO -->
+  <main class="main z">
     <div class="hero">
       <h1>Calculadora de RV ✦</h1>
       <p>Vigência Março/2026 · Canal PAP</p>
     </div>
 
-    <!-- CARGO -->
     <div class="card">
-      <div class="sec-label"><span class="dot"></span>Seu cargo</div>
-      <div class="role-grid">
-        <button class="role-btn active" onclick="setCargo('consultor1',this)">
-          <span class="ri">🏃</span>Consultor I
-        </button>
-        <button class="role-btn" onclick="setCargo('consultor2',this)">
-          <span class="ri">⭐</span>Consultor II
-        </button>
-        <button class="role-btn" onclick="setCargo('lider',this)">
-          <span class="ri">👑</span>Líder PAP
-        </button>
+      <div class="slabel">Seu cargo</div>
+      <div class="cargo-grid">
+        <button class="cargo-btn on" onclick="setCargo('c1',this)"><span class="ci">🏃</span>Consultor I</button>
+        <button class="cargo-btn"    onclick="setCargo('c2',this)"><span class="ci">⭐</span>Consultor II</button>
+        <button class="cargo-btn"    onclick="setCargo('ld',this)"><span class="ci">👑</span>Líder PAP</button>
       </div>
     </div>
 
-    <!-- CAMPOS -->
-    <div class="card" id="campos-card">
-
-      <!-- Receita -->
-      <div class="igroup" id="g-receita">
+    <div class="card">
+      <div class="ig" id="g-rec">
         <label>Receita instalada no mês</label>
-        <div class="iwrap"><span class="ipfx">R$</span>
-          <input type="number" id="receita" placeholder="0,00" min="0" step="0.01" inputmode="decimal"/>
+        <div class="iw"><span class="ipfx">R$</span>
+          <input type="number" id="v-rec" placeholder="0,00" min="0" step="0.01" inputmode="decimal"/>
         </div>
       </div>
 
-      <!-- Meta quantidade -->
-      <div class="igroup hidden" id="g-meta">
+      <div class="ig hidden" id="g-meta">
         <label>Meta de quantidade</label>
-        <div class="iwrap">
-          <input type="number" id="meta-qtd" placeholder="Ex: 20" min="1" class="no-pfx" inputmode="numeric"/>
-        </div>
+        <div class="iw"><input type="number" id="v-meta" placeholder="Ex: 20" min="1" class="np" inputmode="numeric"/></div>
       </div>
 
-      <!-- Vendas realizadas -->
-      <div class="igroup hidden" id="g-vendas">
+      <div class="ig hidden" id="g-vend">
         <label>Vendas realizadas</label>
-        <div class="iwrap">
-          <input type="number" id="vendas-qtd" placeholder="Ex: 22" min="0" class="no-pfx" inputmode="numeric"/>
+        <div class="iw"><input type="number" id="v-vend" placeholder="Ex: 22" min="0" class="np" inputmode="numeric"/></div>
+      </div>
+
+      <div id="g-qual">
+        <div class="slabel" style="margin-top:4px;margin-bottom:10px;">Índice de Qualidade</div>
+        <div class="q-row">
+          <div class="qp"    onclick="setQ(0,   this)"><span class="ql">≤80%</span><span class="qv">+0%</span></div>
+          <div class="qp on" onclick="setQ(.05, this)"><span class="ql">&gt;80%</span><span class="qv">+5%</span></div>
+          <div class="qp"    onclick="setQ(.07, this)"><span class="ql">&gt;85%</span><span class="qv">+7%</span></div>
+          <div class="qp"    onclick="setQ(.10, this)"><span class="ql">&gt;90%</span><span class="qv">+10%</span></div>
         </div>
       </div>
 
-      <!-- Acelerador de Qualidade -->
-      <div id="g-qualidade">
-        <div class="sec-label" style="margin-top:4px;margin-bottom:10px;">
-          <span class="dot" style="background:#22C55E"></span>Índice de Qualidade
-        </div>
-        <div class="q-grid">
-          <div class="q-pill"           onclick="setQ(0,   this)"><span class="ql">≤80%</span><span class="qb">+0%</span></div>
-          <div class="q-pill active"    onclick="setQ(.05, this)"><span class="ql">&gt;80%</span><span class="qb">+5%</span></div>
-          <div class="q-pill"           onclick="setQ(.07, this)"><span class="ql">&gt;85%</span><span class="qb">+7%</span></div>
-          <div class="q-pill"           onclick="setQ(.10, this)"><span class="ql">&gt;90%</span><span class="qb">+10%</span></div>
-        </div>
-      </div>
-
-      <!-- Indicações Parceiro -->
-      <div class="igroup hidden" id="g-indicacoes" style="margin-top:14px;">
+      <div class="ig hidden" id="g-ind" style="margin-top:14px;">
         <label>Receita de Indicações / Terceiros (opcional)</label>
-        <div class="iwrap"><span class="ipfx">R$</span>
-          <input type="number" id="rec-indicacoes" placeholder="0,00" min="0" step="0.01" inputmode="decimal"/>
+        <div class="iw"><span class="ipfx">R$</span>
+          <input type="number" id="v-ind" placeholder="0,00" min="0" step="0.01" inputmode="decimal"/>
         </div>
       </div>
-
-    </div><!-- /campos-card -->
+    </div>
 
     <button class="btn-calc" onclick="calcular()">✦ Calcular Comissão</button>
 
-    <!-- RESULTADO -->
     <div id="resultado">
-
       <div class="res-hero">
-        <div class="res-badge" id="res-badge">—</div>
+        <div class="res-badge" id="r-badge">—</div>
         <div class="res-lbl">Previsão de RV Total</div>
-        <div class="res-val" id="res-total"><small>R$</small>0,00</div>
-        <div class="res-sub" id="res-sub">—</div>
+        <div class="res-num" id="r-total"><small>R$</small> 0,00</div>
+        <div class="res-info" id="r-info">—</div>
       </div>
 
-      <div class="bk-card">
-        <div class="bk-title">Detalhamento</div>
+      <div class="bk">
+        <div class="bk-hd">Detalhamento</div>
         <div id="bk-body"></div>
-        <div class="prog-wrap hidden" id="prog-wrap">
-          <div class="prog-labels">
-            <span>Atingimento</span>
-            <span id="prog-pct">0%</span>
-          </div>
-          <div class="prog-bg">
-            <div class="prog-fill" id="prog-fill" style="width:0%"></div>
-          </div>
+        <div class="prog-area hidden" id="prog-area">
+          <div class="prog-top"><span>Atingimento da meta</span><span id="prog-pct">0%</span></div>
+          <div class="prog-bg"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
         </div>
       </div>
 
-      <div class="info-box hidden" id="box-novato">
+      <div class="box-novato hidden" id="box-novato">
         🎁 <strong>Bônus Garantido:</strong> Colaboradores admitidos a partir de 17/03/26 com receita inferior a R$ 300,00 recebem o mínimo de <strong>R$ 300,00</strong> (válido por 3 meses).
       </div>
 
-      <!-- HISTÓRICO -->
-      <div class="hist-card">
-        <div class="hist-header">
-          <span>📋 Histórico de cálculos</span>
-          <button onclick="carregarHistorico()">↺ Atualizar</button>
+      <div class="hist">
+        <div class="hist-hd">
+          <span>📋 Histórico da sessão</span>
+          <button onclick="limparHist()">✕ Limpar</button>
         </div>
         <div class="hist-list" id="hist-list">
-          <div class="hist-empty">Faça seu primeiro cálculo!</div>
+          <div class="hist-empty">Nenhum cálculo ainda.</div>
         </div>
       </div>
-
-    </div><!-- /resultado -->
-
+    </div>
   </main>
 
-  <footer class="app-footer">
+  <footer class="app-foot">
     Desenvolvido por <a href="#">Henrique Oliveira</a> · Terra Fibra &copy; 2026
   </footer>
 </div>
@@ -656,474 +326,179 @@
 <div class="toast" id="toast"></div>
 
 <script>
-// ══════════════════════════════════════════════════
-//  CONFIGURAÇÃO SUPABASE
-//  ⚠️  Substitua pelos seus valores reais!
-// ══════════════════════════════════════════════════
-const SUPABASE_URL  = 'https://xfjhbqyynbpozrpvvbxq.supabase.co';
-const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhqamhicXl5bmJwb3pycHZ2YnhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDYwNTQ3NDEsImV4cCI6MjA2MTYzMDc0MX0.V93ekdLb4LWZnXmQuQWY1A_u7pqIsFw';
+// ══ USUÁRIOS ══════════════════════════════════════
+// Para adicionar alguém: { nome, cpf, senha, cargo }
+// cargo: 'c1' = Consultor I | 'c2' = Consultor II | 'ld' = Líder
+const USUARIOS = [
+  { nome:'Admin Terra',    cpf:'000.000.000-00', senha:'terra123', cargo:'ld' },
+  { nome:'João Consultor', cpf:'111.111.111-11', senha:'terra123', cargo:'c1' },
+  { nome:'Maria Líder',    cpf:'222.222.222-22', senha:'terra123', cargo:'c2' },
+];
 
-const { createClient } = supabase;
-const db = createClient(SUPABASE_URL, SUPABASE_ANON);
+// ══ ESTADO ════════════════════════════════════════
+let cargo='c1', fatorQ=0.05, historico=[];
 
-// ══════════════════════════════════════════════════
-//  ESTADO GLOBAL
-// ══════════════════════════════════════════════════
-let cargo    = 'consultor1';
-let fatorQ   = 0.05;
-let usuarioId = null;
-let usuarioNome = '';
+// ══ HELPERS ═══════════════════════════════════════
+const $ = id => document.getElementById(id);
+const show = id => $(id)?.classList.remove('hidden');
+const hide = id => $(id)?.classList.add('hidden');
+const tog  = (id,c) => c ? show(id) : hide(id);
 
-// ══════════════════════════════════════════════════
-//  HELPERS UI
-// ══════════════════════════════════════════════════
-function show(id)  { document.getElementById(id)?.classList.remove('hidden'); }
-function hide(id)  { document.getElementById(id)?.classList.add('hidden'); }
-function toggle(id, cond) { cond ? show(id) : hide(id); }
+function fmt(v){ return 'R$ '+v.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.'); }
+function toast(msg,ms=2600){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),ms); }
 
-function toast(msg, dur=2800) {
-  const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), dur);
-}
-
-function fmt(v) {
-  if (isNaN(v) || v === null) return '—';
-  return 'R$ ' + v.toFixed(2)
-    .replace('.', ',')
-    .replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-}
-
-function fmtDate(iso) {
-  const d = new Date(iso);
-  return d.toLocaleDateString('pt-BR') + ' ' +
-         d.toLocaleTimeString('pt-BR', {hour:'2-digit',minute:'2-digit'});
-}
-
-// ══════════════════════════════════════════════════
-//  CPF MASK
-// ══════════════════════════════════════════════════
-document.getElementById('l-cpf').addEventListener('input', function() {
-  let v = this.value.replace(/\D/g,'');
-  if (v.length > 3) v = v.slice(0,3)+'.'+v.slice(3);
-  if (v.length > 7) v = v.slice(0,7)+'.'+v.slice(7);
-  if (v.length > 11) v = v.slice(0,11)+'-'+v.slice(11);
-  this.value = v.slice(0,14);
+// ══ MÁSCARA CPF ═══════════════════════════════════
+$('l-cpf').addEventListener('input',function(){
+  let v=this.value.replace(/\D/g,'');
+  if(v.length>3) v=v.slice(0,3)+'.'+v.slice(3);
+  if(v.length>7) v=v.slice(0,7)+'.'+v.slice(7);
+  if(v.length>11) v=v.slice(0,11)+'-'+v.slice(11);
+  this.value=v.slice(0,14);
 });
+$('l-pw').addEventListener('keydown',e=>{ if(e.key==='Enter') login(); });
 
-document.getElementById('l-senha').addEventListener('keydown', e => {
-  if (e.key === 'Enter') fazerLogin();
-});
-
-// ══════════════════════════════════════════════════
-//  LOGIN
-// ══════════════════════════════════════════════════
-async function fazerLogin() {
-  const cpf   = document.getElementById('l-cpf').value.trim();
-  const senha = document.getElementById('l-senha').value;
-  const btn   = document.getElementById('l-btn-entrar');
-  const erro  = document.getElementById('l-error');
-  const errMsg = document.getElementById('l-error-msg');
-
-  if (!cpf || !senha) {
-    errMsg.textContent = 'Preencha CPF e senha.';
-    erro.classList.add('show'); return;
-  }
-
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Verificando...';
-  erro.classList.remove('show');
-
-  try {
-    // 1. Tenta via RPC (função bcrypt)
-    const { data: rpcData, error: rpcErr } = await db.rpc('verificar_login', {
-      p_cpf: cpf, p_senha: senha
-    });
-
-    console.log('[LOGIN] RPC data:', rpcData, '| error:', rpcErr);
-
-    let user = null;
-
-    if (!rpcErr && rpcData && rpcData.length > 0) {
-      user = rpcData[0];
-    } else if (rpcErr?.code === '42883' || rpcErr?.code === 'PGRST202') {
-      // Função não existe — SQL não foi rodado
-      errMsg.textContent = '⚠️ Execute o supabase_setup.sql no Supabase primeiro!';
-      erro.classList.add('show');
-      btn.disabled = false; btn.innerHTML = 'Entrar na conta'; return;
-    } else if (rpcErr?.code === '42P01') {
-      // Tabela não existe
-      errMsg.textContent = '⚠️ Tabelas não encontradas. Execute o supabase_setup.sql!';
-      erro.classList.add('show');
-      btn.disabled = false; btn.innerHTML = 'Entrar na conta'; return;
-    } else {
-      // 2. Fallback: busca na tabela para checar se usuário existe
-      const { data: tbl, error: tblErr } = await db
-        .from('usuarios')
-        .select('id, nome, cpf, cargo, ativo')
-        .eq('cpf', cpf).eq('ativo', true).maybeSingle();
-
-      console.log('[LOGIN] Table data:', tbl, '| error:', tblErr);
-
-      if (tblErr?.code === '42P01') {
-        errMsg.textContent = '⚠️ Execute o supabase_setup.sql no painel do Supabase!';
-        erro.classList.add('show');
-        btn.disabled = false; btn.innerHTML = 'Entrar na conta'; return;
-      }
-
-      if (!tbl) {
-        errMsg.textContent = 'CPF ou senha incorretos.';
-        erro.classList.add('show');
-        btn.disabled = false; btn.innerHTML = 'Entrar na conta'; return;
-      }
-
-      // usuario existe mas RPC falhou — erro desconhecido
-      errMsg.textContent = 'Erro interno: ' + (rpcErr?.message || 'tente novamente.');
-      erro.classList.add('show');
-      btn.disabled = false; btn.innerHTML = 'Entrar na conta'; return;
-    }
-
-    if (!user) {
-      errMsg.textContent = 'CPF ou senha incorretos.';
-      erro.classList.add('show');
-    } else {
-      usuarioId   = user.id;
-      usuarioNome = user.nome;
-      cargo       = user.cargo || 'consultor1';
-
-      await db.from('usuarios').update({ ultimo_login: new Date().toISOString() }).eq('id', user.id);
-
-      document.getElementById('h-nome').textContent = user.nome.split(' ')[0];
-
-      document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
-      const idx = {consultor1:0, consultor2:1, lider:2}[cargo] ?? 0;
-      document.querySelectorAll('.role-btn')[idx]?.classList.add('active');
-      atualizarCampos();
-
-      document.getElementById('login-screen').style.display = 'none';
-      document.getElementById('app').style.display = 'block';
-      carregarHistorico();
-    }
-  } catch(e) {
-    console.error('[LOGIN] Exceção:', e);
-    errMsg.textContent = 'Erro: ' + (e.message || 'abra o console F12 para detalhes.');
-    erro.classList.add('show');
-  }
-
-  btn.disabled = false;
-  btn.innerHTML = 'Entrar na conta';
-}
-
-function sair() {
-  usuarioId = null; usuarioNome = '';
-  document.getElementById('login-screen').style.display = 'flex';
-  document.getElementById('app').style.display = 'none';
-  document.getElementById('l-cpf').value = '';
-  document.getElementById('l-senha').value = '';
-  document.getElementById('resultado').style.display = 'none';
-  document.getElementById('l-error').classList.remove('show');
-}
-
-// ══════════════════════════════════════════════════
-//  CARGO
-// ══════════════════════════════════════════════════
-function setCargo(c, btn) {
-  cargo = c;
-  document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
+// ══ LOGIN ══════════════════════════════════════════
+function login(){
+  const cpf=$('l-cpf').value.trim();
+  const pw=$('l-pw').value;
+  const user=USUARIOS.find(u=>u.cpf===cpf && u.senha===pw);
+  if(!user){ $('l-err').classList.add('show'); $('l-pw').value=''; return; }
+  $('l-err').classList.remove('show');
+  cargo=user.cargo;
+  $('bar-nome').textContent=user.nome.split(' ')[0];
+  document.querySelectorAll('.cargo-btn').forEach(b=>b.classList.remove('on'));
+  document.querySelectorAll('.cargo-btn')[{c1:0,c2:1,ld:2}[cargo]??0].classList.add('on');
   atualizarCampos();
-  document.getElementById('resultado').style.display = 'none';
+  $('login-screen').style.display='none';
+  $('app').style.display='block';
 }
 
-function atualizarCampos() {
-  const isLider = cargo === 'lider';
-  const isC2    = cargo === 'consultor2';
-
-  toggle('g-receita',    !isLider);
-  toggle('g-meta',        isC2 || isLider);
-  toggle('g-vendas',      isC2 || isLider);
-  toggle('g-qualidade',  !isLider);
-  toggle('g-indicacoes',  isC2 || isLider);
+function logout(){
+  $('login-screen').style.display='flex'; $('app').style.display='none';
+  $('l-cpf').value=''; $('l-pw').value=''; $('l-err').classList.remove('show');
+  $('resultado').style.display='none'; historico=[]; renderHist();
 }
 
-// ══════════════════════════════════════════════════
-//  QUALIDADE
-// ══════════════════════════════════════════════════
-function setQ(f, el) {
-  fatorQ = f;
-  document.querySelectorAll('.q-pill').forEach(p => p.classList.remove('active'));
-  el.classList.add('active');
+// ══ CARGO ══════════════════════════════════════════
+function setCargo(c,btn){
+  cargo=c;
+  document.querySelectorAll('.cargo-btn').forEach(b=>b.classList.remove('on')); btn.classList.add('on');
+  atualizarCampos(); $('resultado').style.display='none';
+}
+function atualizarCampos(){
+  const L=cargo==='ld', C2=cargo==='c2';
+  tog('g-rec',!L); tog('g-meta',C2||L); tog('g-vend',C2||L); tog('g-qual',!L); tog('g-ind',C2||L);
 }
 
-// ══════════════════════════════════════════════════
-//  FATOR DE RECEITA (tabela oficial)
-// ══════════════════════════════════════════════════
-function getFator(r) {
-  if (r <=  1000) return 0.15;
-  if (r <=  1350) return 0.20;
-  if (r <=  2500) return 0.40;
-  if (r <=  3000) return 0.45;
-  if (r <=  3500) return 0.55;
-  if (r <=  4000) return 0.65;
-  if (r <=  4500) return 0.75;
-  if (r <=  5000) return 1.00;
-  return 1.20;
+// ══ QUALIDADE ══════════════════════════════════════
+function setQ(f,el){ fatorQ=f; document.querySelectorAll('.qp').forEach(p=>p.classList.remove('on')); el.classList.add('on'); }
+
+// ══ TABELAS ════════════════════════════════════════
+function getFator(r){
+  if(r<=1000)return 0.15; if(r<=1350)return 0.20; if(r<=2500)return 0.40;
+  if(r<=3000)return 0.45; if(r<=3500)return 0.55; if(r<=4000)return 0.65;
+  if(r<=4500)return 0.75; if(r<=5000)return 1.00; return 1.20;
+}
+function getBonusTime(p){ if(p<85)return 0; if(p<100)return 250; return 450+Math.floor((Math.min(p,140)-100)/5)*100; }
+function getBonusLider(p){ if(p<85)return 0; if(p<100)return 600; return 1000+Math.floor((Math.min(p,140)-100)/5)*200; }
+function getBonusInd(ri,p){ if(p>=100)return ri*0.15; if(p>=80)return ri*0.10; return 0; }
+function statusMeta(p){
+  if(p<85)  return `<span style="color:var(--bad)">✗ Não atingida (${p.toFixed(1)}%)</span>`;
+  if(p<100) return `<span style="color:var(--warn)">⚡ Parcial (${p.toFixed(1)}%)</span>`;
+  return `<span style="color:var(--ok)">✓ Atingida (${p.toFixed(1)}%)</span>`;
+}
+function row(ic,lb,vl,cl=''){
+  return `<div class="bk-row"><span class="bk-l"><span>${ic}</span>${lb}</span><span class="bk-r ${cl}">${vl}</span></div>`;
 }
 
-// ══════════════════════════════════════════════════
-//  BÔNUS META TIME (Consultor II)
-// ══════════════════════════════════════════════════
-function getBonusMetaTime(pct) {
-  if (pct < 85)  return 0;
-  if (pct < 100) return 250;
-  const base = 450;
-  const extras = Math.floor((Math.min(pct, 140) - 100) / 5);
-  return base + extras * 100;
-}
+// ══ CALCULAR ═══════════════════════════════════════
+function calcular(){
+  const rec=parseFloat($('v-rec').value)||0;
+  const meta=parseInt($('v-meta').value)||0;
+  const vend=parseInt($('v-vend').value)||0;
+  const ind=parseFloat($('v-ind').value)||0;
+  let total=0,badge='',info='',html='',pct=0,novato=false;
 
-// ══════════════════════════════════════════════════
-//  BÔNUS LÍDER
-// ══════════════════════════════════════════════════
-function getBonusLider(pct) {
-  if (pct < 85)  return 0;
-  if (pct < 100) return 600;
-  const base = 1000;
-  const extras = Math.floor((Math.min(pct, 140) - 100) / 5);
-  return base + extras * 200;
-}
-
-// ══════════════════════════════════════════════════
-//  BÔNUS INDICAÇÕES
-// ══════════════════════════════════════════════════
-function getBonusIndicacoes(recInd, pct) {
-  if (pct >= 100) return recInd * 0.15;
-  if (pct >= 80)  return recInd * 0.10;
-  return 0;
-}
-
-// ══════════════════════════════════════════════════
-//  RENDER BREAKDOWN
-// ══════════════════════════════════════════════════
-function renderRow(icon, label, val, cls='') {
-  return `<div class="bk-row">
-    <span class="bk-lbl"><span>${icon}</span>${label}</span>
-    <span class="bk-val ${cls}">${val}</span>
-  </div>`;
-}
-
-function statusBadge(pct) {
-  if (pct < 85)  return `<span style="color:#F87171">✗ Não atingida (${pct.toFixed(1)}%)</span>`;
-  if (pct < 100) return `<span style="color:#FCD34D">⚡ Parcial (${pct.toFixed(1)}%)</span>`;
-  return `<span style="color:#4ADE80">✓ Atingida (${pct.toFixed(1)}%)</span>`;
-}
-
-// ══════════════════════════════════════════════════
-//  CALCULAR
-// ══════════════════════════════════════════════════
-async function calcular() {
-  const receita    = parseFloat(document.getElementById('receita').value)       || 0;
-  const metaQtd    = parseInt(document.getElementById('meta-qtd').value)        || 0;
-  const vendasQtd  = parseInt(document.getElementById('vendas-qtd').value)      || 0;
-  const recInd     = parseFloat(document.getElementById('rec-indicacoes').value)|| 0;
-
-  let payload = {
-    usuario_id: usuarioId,
-    cargo,
-    receita:               null,
-    fator_comissao:        null,
-    rv_base:               null,
-    indice_qualidade:      null,
-    fator_qualidade:       null,
-    acelerador_qualidade:  null,
-    meta_quantidade:       null,
-    vendas_realizadas:     null,
-    percentual_atingido:   null,
-    bonus_meta_time:       null,
-    receita_indicacoes:    null,
-    bonus_indicacoes:      null,
-    rv_total:              0,
-    bonus_novato_aplicado: false,
-  };
-
-  let html = '';
-  let total = 0;
-  let badge = '';
-  let subtext = '';
-  let pct = 0;
-  let novato = false;
-
-  // ── CONSULTOR I ──
-  if (cargo === 'consultor1') {
-    if (receita <= 0) { toast('⚠️ Informe a receita.'); return; }
-    badge = 'CONSULTOR I PAP';
-    const fator = getFator(receita);
-    const rv    = receita * fator;
-    const acel  = rv * fatorQ;
-    total = rv + acel;
-
-    const qLabel = ['≤80%','>80%','>85%','>90%'][[0,.05,.07,.10].indexOf(fatorQ)] ?? '';
-
-    if (total < 300) { total = 300; novato = true; }
-
-    payload = { ...payload,
-      receita, fator_comissao: fator, rv_base: rv,
-      indice_qualidade: qLabel, fator_qualidade: fatorQ,
-      acelerador_qualidade: acel, rv_total: total,
-      bonus_novato_aplicado: novato,
-    };
-
-    subtext = `Fator ${(fator*100).toFixed(0)}% · Acelerador ${(fatorQ*100).toFixed(0)}%`;
-
-    html  = renderRow('💰','Receita do mês',       fmt(receita));
-    html += renderRow('📊','Fator de comissão',    (fator*100).toFixed(0)+'%','a');
-    html += renderRow('🏆','RV Vendeu & Ganhou',   fmt(rv));
-    html += renderRow('✨',`Acelerador de Qualidade (+${(fatorQ*100).toFixed(0)}%)`, fmt(acel), fatorQ>0?'s':'w');
-    html += renderRow('💎','RV Total',             fmt(total),'s');
+  if(cargo==='c1'){
+    if(rec<=0){toast('⚠️ Informe a receita.');return;}
+    badge='CONSULTOR I PAP';
+    const f=getFator(rec), rv=rec*f, acel=rv*fatorQ;
+    total=rv+acel;
+    if(total<300){total=300;novato=true;}
+    info=`Fator ${(f*100).toFixed(0)}% · Acelerador ${(fatorQ*100).toFixed(0)}%`;
+    html=row('💰','Receita do mês',fmt(rec))
+        +row('📊','Fator de comissão',(f*100).toFixed(0)+'%','hi')
+        +row('🏆','RV Vendeu &amp; Ganhou',fmt(rv))
+        +row('✨',`Acelerador (+${(fatorQ*100).toFixed(0)}%)`,fmt(acel),fatorQ>0?'ok':'warn')
+        +row('💎','RV Total',fmt(total),'ok');
+  }
+  else if(cargo==='c2'){
+    if(rec<=0||meta<=0){toast('⚠️ Preencha receita e meta.');return;}
+    badge='CONSULTOR II PAP'; pct=(vend/meta)*100;
+    const f=getFator(rec),rv=rec*f,acel=rv*fatorQ,bT=getBonusTime(pct),bI=getBonusInd(ind,pct);
+    total=rv+acel+bT+bI;
+    if(total<300){total=300;novato=true;}
+    info=`Meta ${pct.toFixed(1)}% · Meta Time ${fmt(bT)}`;
+    html=row('💰','Receita do mês',fmt(rec))
+        +row('📊','Fator de comissão',(f*100).toFixed(0)+'%','hi')
+        +row('🏆','RV Vendeu &amp; Ganhou',fmt(rv))
+        +row('✨',`Acelerador (+${(fatorQ*100).toFixed(0)}%)`,fmt(acel),fatorQ>0?'ok':'warn')
+        +row('🎯','Status da Meta',statusMeta(pct))
+        +row('👥','Bônus Meta Time',fmt(bT),pct>=100?'ok':pct>=85?'warn':'bad')
+        +(ind>0?row('🤝','Bônus Indicações/Terceiros',fmt(bI),'ok'):'')
+        +row('💎','RV Total',fmt(total),'ok');
+  }
+  else{
+    if(meta<=0){toast('⚠️ Informe a meta de quantidade.');return;}
+    badge='LÍDER PAP'; pct=(vend/meta)*100;
+    const bB=getBonusLider(pct),bI=getBonusInd(ind,pct);
+    total=bB+bI;
+    info=`Atingimento ${pct.toFixed(1)}% · Base ${fmt(bB)}`;
+    html=row('🎯','Status da Meta',statusMeta(pct))
+        +row('📦','Meta de quantidade',meta+' vendas')
+        +row('✅','Vendas realizadas',vend+' vendas')
+        +row('🏆','RV por atingimento',fmt(bB),pct>=100?'ok':pct>=85?'warn':'bad')
+        +(ind>0?row('🤝','Bônus Indicações/Terceiros',fmt(bI),'ok'):'')
+        +row('💎','RV Total',fmt(total),'ok');
   }
 
-  // ── CONSULTOR II ──
-  else if (cargo === 'consultor2') {
-    if (receita <= 0 || metaQtd <= 0) { toast('⚠️ Preencha receita e meta.'); return; }
-    badge = 'CONSULTOR II PAP';
-    pct = (vendasQtd / metaQtd) * 100;
+  $('r-badge').textContent=badge;
+  $('r-total').innerHTML=`<small>R$</small> ${fmt(total).replace('R$ ','')}`;
+  $('r-info').textContent=info;
+  $('bk-body').innerHTML=html;
 
-    const fator      = getFator(receita);
-    const rv         = receita * fator;
-    const acel       = rv * fatorQ;
-    const bonusTime  = getBonusMetaTime(pct);
-    const bonusInd   = getBonusIndicacoes(recInd, pct);
-    total = rv + acel + bonusTime + bonusInd;
+  if(cargo!=='c1'&&meta>0){
+    show('prog-area');
+    $('prog-fill').style.width=(Math.min(pct,140)/140*100)+'%';
+    $('prog-pct').textContent=pct.toFixed(1)+'%';
+  } else hide('prog-area');
 
-    const qLabel = ['≤80%','>80%','>85%','>90%'][[0,.05,.07,.10].indexOf(fatorQ)] ?? '';
+  novato?show('box-novato'):hide('box-novato');
+  $('resultado').style.display='block';
+  $('resultado').scrollIntoView({behavior:'smooth',block:'start'});
 
-    if (total < 300) { total = 300; novato = true; }
-
-    payload = { ...payload,
-      receita, fator_comissao: fator, rv_base: rv,
-      indice_qualidade: qLabel, fator_qualidade: fatorQ,
-      acelerador_qualidade: acel, meta_quantidade: metaQtd,
-      vendas_realizadas: vendasQtd, percentual_atingido: pct,
-      bonus_meta_time: bonusTime, receita_indicacoes: recInd,
-      bonus_indicacoes: bonusInd, rv_total: total,
-      bonus_novato_aplicado: novato,
-    };
-
-    subtext = `Meta ${pct.toFixed(1)}% · Meta Time ${fmt(bonusTime)}`;
-
-    html  = renderRow('💰','Receita do mês',          fmt(receita));
-    html += renderRow('📊','Fator de comissão',       (fator*100).toFixed(0)+'%','a');
-    html += renderRow('🏆','RV Vendeu & Ganhou',      fmt(rv));
-    html += renderRow('✨',`Acelerador (+${(fatorQ*100).toFixed(0)}%)`, fmt(acel), fatorQ>0?'s':'w');
-    html += renderRow('🎯','Status Meta Time',        statusBadge(pct));
-    html += renderRow('👥','Bônus Meta Time',         fmt(bonusTime), pct>=100?'s':pct>=85?'w':'d');
-    if (recInd > 0)
-      html += renderRow('🤝','Bônus Indicações/Terceiros', fmt(bonusInd),'s');
-    html += renderRow('💎','RV Total',                fmt(total),'s');
-  }
-
-  // ── LÍDER ──
-  else if (cargo === 'lider') {
-    if (metaQtd <= 0) { toast('⚠️ Informe a meta de quantidade.'); return; }
-    badge = 'LÍDER PAP';
-    pct = (vendasQtd / metaQtd) * 100;
-
-    const bonusBase = getBonusLider(pct);
-    const bonusInd  = getBonusIndicacoes(recInd, pct);
-    total = bonusBase + bonusInd;
-
-    payload = { ...payload,
-      meta_quantidade: metaQtd, vendas_realizadas: vendasQtd,
-      percentual_atingido: pct, bonus_meta_time: bonusBase,
-      receita_indicacoes: recInd, bonus_indicacoes: bonusInd,
-      rv_total: total,
-    };
-
-    subtext = `Atingimento ${pct.toFixed(1)}% · Base ${fmt(bonusBase)}`;
-
-    html  = renderRow('🎯','Status da Meta',          statusBadge(pct));
-    html += renderRow('📦','Meta de quantidade',      metaQtd+' vendas');
-    html += renderRow('✅','Vendas realizadas',        vendasQtd+' vendas');
-    html += renderRow('🏆','RV por atingimento',      fmt(bonusBase), pct>=100?'s':pct>=85?'w':'d');
-    if (recInd > 0)
-      html += renderRow('🤝','Bônus Indicações/Terceiros', fmt(bonusInd),'s');
-    html += renderRow('💎','RV Total',                fmt(total),'s');
-  }
-
-  // ── RENDER UI ──
-  document.getElementById('res-badge').textContent = badge;
-  const parts = fmt(total).split('$ ');
-  document.getElementById('res-total').innerHTML = `<small>R$</small> ${parts[1]}`;
-  document.getElementById('res-sub').textContent = subtext;
-  document.getElementById('bk-body').innerHTML   = html;
-
-  // progresso
-  if (cargo !== 'consultor1' && metaQtd > 0) {
-    show('prog-wrap');
-    const w = Math.min(pct, 140);
-    document.getElementById('prog-fill').style.width = (w/140*100)+'%';
-    document.getElementById('prog-pct').textContent  = pct.toFixed(1)+'%';
-  } else {
-    hide('prog-wrap');
-  }
-
-  // novato
-  novato ? show('box-novato') : hide('box-novato');
-
-  document.getElementById('resultado').style.display = 'block';
-  document.getElementById('resultado').scrollIntoView({ behavior:'smooth', block:'start' });
-
-  // salva no banco
-  await salvarHistorico(payload);
-  await carregarHistorico();
+  historico.unshift({cargo:{c1:'Consultor I',c2:'Consultor II',ld:'Líder PAP'}[cargo],total,hora:new Date()});
+  if(historico.length>20)historico.pop();
+  renderHist();
+  toast('✅ Comissão calculada!');
 }
 
-// ══════════════════════════════════════════════════
-//  SALVAR HISTÓRICO
-// ══════════════════════════════════════════════════
-async function salvarHistorico(payload) {
-  if (!usuarioId) return;
-  const { error } = await db.from('historico_calculos').insert(payload);
-  if (error) console.warn('Erro ao salvar histórico:', error.message);
-  else toast('✅ Cálculo salvo no histórico!');
-}
-
-// ══════════════════════════════════════════════════
-//  CARREGAR HISTÓRICO
-// ══════════════════════════════════════════════════
-async function carregarHistorico() {
-  if (!usuarioId) return;
-
-  const { data, error } = await db
-    .from('historico_calculos')
-    .select('*')
-    .eq('usuario_id', usuarioId)
-    .order('calculado_em', { ascending: false })
-    .limit(15);
-
-  const list = document.getElementById('hist-list');
-
-  if (error || !data || data.length === 0) {
-    list.innerHTML = '<div class="hist-empty">Nenhum cálculo salvo ainda.</div>';
-    return;
-  }
-
-  const cargoLabel = { consultor1:'Consultor I', consultor2:'Consultor II', lider:'Líder PAP' };
-  const cargoIcon  = { consultor1:'🏃', consultor2:'⭐', lider:'👑' };
-
-  list.innerHTML = data.map(r => `
+// ══ HISTÓRICO ══════════════════════════════════════
+function renderHist(){
+  const el=$('hist-list');
+  if(!historico.length){el.innerHTML='<div class="hist-empty">Nenhum cálculo ainda.</div>';return;}
+  const ic={Consultor_I:'🏃','Consultor I':'🏃','Consultor II':'⭐','Líder PAP':'👑'};
+  el.innerHTML=historico.map(h=>`
     <div class="hist-item">
-      <div class="hi-left">
-        <div class="hi-cargo">${cargoIcon[r.cargo]||'📋'} ${cargoLabel[r.cargo]||r.cargo}</div>
-        <div class="hi-data">${fmtDate(r.calculado_em)}</div>
+      <div>
+        <div class="hi-cargo">${ic[h.cargo]||'📋'} ${h.cargo}</div>
+        <div class="hi-data">${h.hora.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</div>
       </div>
-      <div class="hi-right">
-        <div class="hi-rv">${fmt(r.rv_total)}</div>
-      </div>
-    </div>
-  `).join('');
+      <div class="hi-rv">${fmt(h.total)}</div>
+    </div>`).join('');
 }
+function limparHist(){ historico=[]; renderHist(); toast('🗑️ Histórico limpo.'); }
 
-// init
 atualizarCampos();
 </script>
 </body>
