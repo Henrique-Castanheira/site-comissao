@@ -47,3 +47,22 @@ document.addEventListener("app:sair", async () => {
     window.location.replace("index.html");
   }
 });
+/**
+ * Logout. O botão "Sair" dispara o evento "app:sair", que também pode ser
+ * disparado por qualquer outro elemento no futuro:
+ * document.dispatchEvent(new Event("app:sair"))
+ */
+const botaoSair = document.getElementById("btn-sair");
+
+document.addEventListener("app:sair", async () => {
+  botaoSair.disabled = true; // evita cliques repetidos
+  try {
+    await sair();
+  } finally {
+    window.location.replace("index.html");
+  }
+});
+
+botaoSair.addEventListener("click", () => {
+  document.dispatchEvent(new Event("app:sair"));
+});
