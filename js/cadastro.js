@@ -1,82 +1,81 @@
-/** Lógica da tela de cadastro (cadastro.html). */
-import { cadastrar, mensagemDeErro } from "./auth.js";
-import { normalizarTelefone } from "./phone.js";
-import {
-  mostrarMensagem,
-  limparMensagem,
-  erroDeCampo,
-  limparErrosDeCampo,
-  definirCarregando
-} from "./ui.js";
+import { cadastrar } from "./auth.js";
 
-const TAMANHO_MINIMO_SENHA = 8;
-const NOME_MIN = 2;
-const NOME_MAX = 80;
-const form = document.getElementById("form-cadastro");
-const botao = document.getElementById("btn-cadastrar");
-let enviando = false;
+const form = document.querySelector("form") || document.getElementById("form-cadastro");
+const btnSubmit = document.querySelector('button[type="submit"]') || document.getElementById("btn-cadastrar");
 
-form.addEventListener("submit", async (evento) => {
-  evento.preventDefault();
-  if (enviando) return;
-
-  limparMensagem();
-  limparErrosDeCampo(["nome", "telefone", "senha", "confirmacao"]);
-
-  // Remove espaços nas pontas e reduz espaços repetidos.
-  const nome = document.getElementById("nome").value.trim().replace(/\s+/g, " ");
-  const telefoneBruto = document.getElementById("telefone").value;
-  const senha = document.getElementById("senha").value;
-  const confirmacao = document.getElementById("confirmacao").value;
-
-  let valido = true;
-  let telefone = null;
-
-  if (!nome) {
-    erroDeCampo("nome", "Informe o nome.");
-    valido = false;
-  } else if (nome.length < NOME_MIN || nome.length > NOME_MAX || !/\p{L}/u.test(nome)) {
-    erroDeCampo("nome", `Informe um nome válido (de ${NOME_MIN} a ${NOME_MAX} caracteres).`);
-    valido = false;
+// Função para exibir mensagem na caixa vermelha de erro
+function mostrarErro(mensagem) {
+  let boxErro = document.querySelector(".alert-danger") || document.querySelector('[class*="erro"]');
+  if (!boxErro) {
+    boxErro = document.createElement("div");
+    boxErro.style.color = "#721c24";
+    boxErro.style.backgroundColor = "#f8d7da";
+    boxErro.style.borderColor = "#f5c6cb";
+    boxErro.style.padding = "10px";
+    boxErro.style.borderRadius = "4px";
+    boxErro.style.marginBottom = "15px";
+    form.prepend(boxErro);
   }
+  boxErro.textContent = mensagem;
+  boxErro.style.display = "block";
+}
 
-  if (!telefoneBruto.trim()) {
-    erroDeCampo("telefone", "Informe o telefone.");
-    valido = false;
-  } else {
-    telefone = normalizarTelefone(telefoneBruto);
-    if (!telefone) {
-      erroDeCampo("telefone", "Telefone inválido. Use DDD + número ou +código do país.");
-      valido = false;
+if (form) {
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    // Captura dos campos de entrada
+    const nomeInput = document.getElementById("nome") || document.querySelector('input[type="text"]');
+    const telInput = document.getElementById("telefone") || document.getElementById("tel") || document.querySelectorAll("input")[1];
+    const senhaInput = document.getElementById("senha") || document.querySelector('input[type="password"]');
+    const confirmaSenhaInput = document.getElementById("confirmar-senha") || document.querySelectorAll('input[type="password"]')[1];
+
+    const nome = nomeInput ? nomeInput.value.trim() : "";
+    const telefone = telInput ? telInput.value.trim() : "";
+    const senha = senhaInput ? senhaInput.value : "";
+    const confirmaSenha = confirmaSenhaInput ? confirmaSenhaInput.value : "";
+
+    // Validações locais
+    if (!nome) {
+      mostrarErro("Por favor, preencha o seu nome.");
+      return;
     }
-  }
 
-  if (!senha) {
-    erroDeCampo("senha", "Informe a senha.");
-    valido = false;
-  } else if (senha.length < TAMANHO_MINIMO_SENHA) {
-    erroDeCampo("senha", `A senha deve ter pelo menos ${TAMANHO_MINIMO_SENHA} caracteres.`);
-    valido = false;
-  }
+    if (!telefone) {
+      mostrarErro("Por favor, preencha o número de telefone.");
+      return;
+    }
 
-  if (!confirmacao) {
-    erroDeCampo("confirmacao", "Confirme a senha.");
-    valido = false;
-  } else if (senha !== confirmacao) {
-    erroDeCampo("confirmacao", "As senhas não coincidem.");
-    valido = false;
-  }
+    if (!senha) {
+      mostrarErro("Por favor, preencha a senha.");
+      return;
+    }
 
-  if (!valido) return;
+    if (senha.length < 6) {
+      mostrarErro("A senha deve ter pelo menos 6 caracteres.");
+      return;
+    }
 
-  enviando = true;
-  definirCarregando(botao, true);
-  try {
-    await cadastrar(nome, telefone, senha);
-    window.location.href = "home.html"; // ou o fluxo de sucesso do seu projeto
-  } catch (error) {
-    console.error("Erro no cadastro:", error);
-  // Exibe a mensagem explicativa retornada do auth.js
-    exibirErro(error.message || "Não foi possível concluir o cadastro. Tente novamente.");
-  }
-});
+    if (confirmaSenha && senha !== confirmaSenha) {
+      mostrarErro("As senhas não coincidem.");
+      return;
+    }
+
+    try {
+      if (btnSubmit) btnSubmit.disabled = true;
+      
+      // Chama a função cadastrar passando nome, telefone e senha
+      await cadastrar(nome, telefone, senha);
+
+      // Redireciona para a página principal após o cadastro com sucesso
+      window.location.href = "home.html";
+    } catch (error) {
+      console.error("Detalhes do erro no cadastro:", error);
+      
+      // Exibe a mensagem de erro específica vinda do auth.js em vez do texto genérico
+      mostrarErro(error.message || "Erro ao realizar o cadastro. Verifique os dados e tente novamente.");
+    } finally {
+      if (btnSubmit) btnSubmit.disabled = false;
+    }
+  });
+}
