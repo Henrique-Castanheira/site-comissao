@@ -1,79 +1,40 @@
 /**
- * Normalização e validação de telefones (formato E.164).
- *
- * Funções puras, sem dependência do navegador, para facilitar testes.
- * Validar o formato NÃO prova que o número pertence ao usuário.
+ * Normaliza o telefone digitado para o formato internacional (+5511999999999)
  */
-import { CODIGO_PAIS_PADRAO, DOMINIO_EMAIL_SINTETICO } from "./firebase-config.js";
+export function normalizarTelefone(telefone) {
+  if (!telefone) return "";
+  
+  // Remove todos os caracteres não numéricos, exceto o '+' se já existir no início
+  let limpo = telefone.trim().replace(/[^\d+]/g, "");
 
-const E164 = /^\+[1-9]\d{7,14}$/;
+  if (!limpo) return "";
 
-/**
- * Converte a entrada do usuário em E.164 ou retorna null se for inválida.
- *
- * Regras:
- *  - "+..." : usa o número como digitado (só dígitos após o "+").
- *  - 10 ou 11 dígitos: assume o país padrão (Brasil).
- *  - 12 ou 13 dígitos começando com o código do país padrão: acrescenta "+".
- *  - Números brasileiros (+55): DDD 11–99 e, com 9 dígitos, o primeiro deve ser 9.
- */
-export function normalizarTelefone(entrada) {
-  if (typeof entrada !== "string") return null;
-  const texto = entrada.trim();
-  if (!texto) return null;
-
-  // Rejeita letras e símbolos inesperados (permite espaços, (), - e .).
-  if (!/^\+?[\d\s().-]+$/.test(texto)) return null;
-
-  const digitos = texto.replace(/\D/g, "");
-  let e164;
-
-  if (texto.startsWith("+")) {
-    e164 = "+" + digitos;
-  } else if (digitos.length === 10 || digitos.length === 11) {
-    e164 = "+" + CODIGO_PAIS_PADRAO + digitos;
-  } else if (
-    (digitos.length === 12 || digitos.length === 13) &&
-    digitos.startsWith(CODIGO_PAIS_PADRAO)
-  ) {
-    e164 = "+" + digitos;
-  } else {
-    return null;
+  // Se começou com +, mantém o número
+  if (limpo.startsWith("+")) {
+    return limpo;
   }
 
-  if (!E164.test(e164)) return null;
-
-  if (e164.startsWith("+55")) {
-    const nacional = e164.slice(3);
-    if (nacional.length !== 10 && nacional.length !== 11) return null;
-    const ddd = Number(nacional.slice(0, 2));
-    if (ddd < 11 || ddd > 99) return null;
-    if (nacional.length === 11 && nacional[2] !== "9") return null;
+  // Remove o '0' do DDD se o usuário digitou (ex: 019991490901 -> 19991490901)
+  if (limpo.length === 12 && limpo.startsWith("0")) {
+    limpo = limpo.slice(1);
   }
 
-  return e164;
+  // Se tiver 10 ou 11 dígitos (com DDD), adiciona o código do Brasil +55
+  if (limpo.length === 10 || limpo.length === 11) {
+    return "+55" + limpo;
+  }
+
+  return limpo;
 }
 
 /**
- * E-mail sintético determinístico que representa o telefone no Firebase Auth.
- * Ex.: "+5511999999999" -> "5511999999999@phone.invalid"
+ * Converte o telefone normalizado em um e-mail fictício para uso no Firebase Auth
  */
-export function telefoneParaEmail(e164) {
-  return e164.replace(/^\+/, "") + "@" + DOMINIO_EMAIL_SINTETICO;
-}
-
-/** Operação inversa: "5511999999999@phone.invalid" -> "+5511999999999" (ou null). */
-export function emailParaTelefone(email) {
-  const m = typeof email === "string" ? email.match(/^(\d+)@/) : null;
-  return m ? "+" + m[1] : null;
-}
-
-/**
- * Formata para exibição. Números brasileiros ficam "+55 (11) 99999-9999";
- * os demais são exibidos em E.164.
- */
-export function formatarTelefone(e164) {
-  if (typeof e164 !== "string") return "";
-  const m = e164.match(/^\+55(\d{2})(\d{4,5})(\d{4})$/);
-  return m ? `+55 (${m[1]}) ${m[2]}-${m[3]}` : e164;
+export function telefoneParaEmail(telefone) {
+  const norm = normalizarTelefone(telefone);
+  if (!norm) return "";
+  
+  // Remove o '+' para criar o prefixo do e-mail (ex: 5519991490901@phone.invalid)
+  const apenasNumeros = norm.replace("+", "");
+  return `${apenasNumeros}@phone.invalid`;
 }
