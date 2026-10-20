@@ -61,3 +61,19 @@ export function normalizarTelefone(entrada) {
 export function telefoneParaEmail(e164) {
   return e164.replace(/^\+/, "") + "@" + DOMINIO_EMAIL_SINTETICO;
 }
+
+/** Operação inversa: "5511999999999@phone.invalid" -> "+5511999999999" (ou null). */
+export function emailParaTelefone(email) {
+  const m = typeof email === "string" ? email.match(/^(\d+)@/) : null;
+  return m ? "+" + m[1] : null;
+}
+
+/**
+ * Formata para exibição. Números brasileiros ficam "+55 (11) 99999-9999";
+ * os demais são exibidos em E.164.
+ */
+export function formatarTelefone(e164) {
+  if (typeof e164 !== "string") return "";
+  const m = e164.match(/^\+55(\d{2})(\d{4,5})(\d{4})$/);
+  return m ? `+55 (${m[1]}) ${m[2]}-${m[3]}` : e164;
+}

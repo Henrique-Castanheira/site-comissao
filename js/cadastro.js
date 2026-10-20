@@ -10,6 +10,8 @@ import {
 } from "./ui.js";
 
 const TAMANHO_MINIMO_SENHA = 8;
+const NOME_MIN = 2;
+const NOME_MAX = 80;
 const form = document.getElementById("form-cadastro");
 const botao = document.getElementById("btn-cadastrar");
 let enviando = false;
@@ -19,14 +21,24 @@ form.addEventListener("submit", async (evento) => {
   if (enviando) return;
 
   limparMensagem();
-  limparErrosDeCampo(["telefone", "senha", "confirmacao"]);
+  limparErrosDeCampo(["nome", "telefone", "senha", "confirmacao"]);
 
+  // Remove espaços nas pontas e reduz espaços repetidos.
+  const nome = document.getElementById("nome").value.trim().replace(/\s+/g, " ");
   const telefoneBruto = document.getElementById("telefone").value;
   const senha = document.getElementById("senha").value;
   const confirmacao = document.getElementById("confirmacao").value;
 
   let valido = true;
   let telefone = null;
+
+  if (!nome) {
+    erroDeCampo("nome", "Informe o nome.");
+    valido = false;
+  } else if (nome.length < NOME_MIN || nome.length > NOME_MAX || !/\p{L}/u.test(nome)) {
+    erroDeCampo("nome", `Informe um nome válido (de ${NOME_MIN} a ${NOME_MAX} caracteres).`);
+    valido = false;
+  }
 
   if (!telefoneBruto.trim()) {
     erroDeCampo("telefone", "Informe o telefone.");
@@ -61,7 +73,7 @@ form.addEventListener("submit", async (evento) => {
   definirCarregando(botao, true);
   try {
     // O Firebase deixa o usuário autenticado após criar a conta.
-    await cadastrar(telefone, senha);
+    await cadastrar(nome, telefone, senha);
     window.location.replace("home.html");
   } catch (erro) {
     mostrarMensagem("erro", mensagemDeErro(erro, "cadastro"));

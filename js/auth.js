@@ -36,7 +36,7 @@ export async function entrar(telefoneE164, senha) {
  * Se a gravação do perfil falhar, a conta recém-criada é removida para não
  * deixar um usuário sem perfil.
  */
-export async function cadastrar(telefoneE164, senha) {
+export async function cadastrar(nome, telefoneE164, senha) {
   const credencial = await createUserWithEmailAndPassword(
     auth,
     telefoneParaEmail(telefoneE164),
@@ -47,6 +47,7 @@ export async function cadastrar(telefoneE164, senha) {
   try {
     await setDoc(doc(db, "users", usuario.uid), {
       uid: usuario.uid,
+      name: nome,
       phoneNumber: telefoneE164,
       createdAt: serverTimestamp(),
       // Sem consentimento por padrão: cadastrar o telefone NÃO autoriza
