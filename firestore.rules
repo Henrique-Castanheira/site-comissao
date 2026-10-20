@@ -1,0 +1,58 @@
+rules_version = '2';
+
+// Regras do Cloud Firestore.
+// Publique em: Console do Firebase > Firestore > Regras (ou `firebase deploy --only firestore:rules`).
+//
+// Modelo: cada usuário só acessa users/{seu uid}. O backend confiável
+// (Admin SDK) ignora estas regras e deve validar permissões por conta própria.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function logado() {
+      return request.auth != null;
+    }
+
+    // O e-mail sintético do token deve corresponder ao telefone gravado,
+    // impedindo que alguém registre um telefone que não é o da própria conta.
+    // Mantenha o domínio igual a DOMINIO_EMAIL_SINTETICO em js/firebase-config.js.
+    function telefoneConfere(telefone) {
+      return request.auth.token.email != null
+        && request.auth.token.email.matches('^[0-9]+@phone\\.invalid$')
+        && ('+' + request.auth.token.email.split('@')[0]) == telefone;
+    }
+
+    match /users/{uid} {
+      // Lê apenas o próprio documento.
+      allow read: if logado() && request.auth.uid == uid;
+
+      // Cria apenas o próprio documento, com exatamente os campos esperados,
+      // data do servidor e WhatsApp desativado (sem consentimento presumido).
+      allow create: if logado()
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['uid', 'phoneNumber', 'createdAt', 'whatsappEnabled'])
+        && request.resource.data.keys().hasAll(['uid', 'phoneNumber', 'createdAt', 'whatsappEnabled'])
+        && request.resource.data.uid == uid
+        && request.resource.data.phoneNumber is string
+        && request.resource.data.phoneNumber.matches('^\\+[1-9][0-9]{7,14}$')
+        && telefoneConfere(request.resource.data.phoneNumber)
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.whatsappEnabled == false;
+
+      // O usuário só pode REVOGAR o consentimento (true -> false).
+      // Conceder consentimento é feito pelo backend, que registra a prova.
+      allow update: if logado()
+        && request.auth.uid == uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['whatsappEnabled', 'updatedAt'])
+        && request.resource.data.whatsappEnabled == false
+        && request.resource.data.updatedAt == request.time;
+
+      // Exclusão da conta/dados: apenas via backend.
+      allow delete: if false;
+    }
+
+    // Todo o resto é negado por padrão.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Criar conta</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <main class="card" aria-labelledby="titulo">
+    <h1 id="titulo">Criar conta</h1>
+
+    <div id="mensagem" class="alerta" role="alert" aria-live="polite" hidden></div>
+
+    <form id="form-cadastro" novalidate>
+      <div class="campo">
+        <label for="telefone">Telefone</label>
+        <input id="telefone" name="telefone" type="tel" inputmode="tel"
+               autocomplete="tel" placeholder="(11) 99999-9999" required>
+        <small class="ajuda">Com DDD. Para outros países, use o formato +código do país.</small>
+        <span class="erro-campo" id="erro-telefone" hidden></span>
+      </div>
+
+      <div class="campo">
+        <label for="senha">Senha</label>
+        <input id="senha" name="senha" type="password"
+               autocomplete="new-password" minlength="8" required>
+        <small class="ajuda">Mínimo de 8 caracteres.</small>
+        <span class="erro-campo" id="erro-senha" hidden></span>
+      </div>
+
+      <div class="campo">
+        <label for="confirmacao">Confirmar senha</label>
+        <input id="confirmacao" name="confirmacao" type="password"
+               autocomplete="new-password" required>
+        <span class="erro-campo" id="erro-confirmacao" hidden></span>
+      </div>
+
+      <button type="submit" id="btn-cadastrar" class="btn">
+        <span class="btn-texto">Criar conta</span>
+        <span class="spinner" aria-hidden="true" hidden></span>
+      </button>
+    </form>
+
+    <p class="links">
+      <a href="index.html">Já tenho conta</a>
+    </p>
+  </main>
+
+  <script type="module" src="js/cadastro.js"></script>
+</body>
+</html>
