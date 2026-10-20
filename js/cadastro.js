@@ -72,12 +72,11 @@ form.addEventListener("submit", async (evento) => {
   enviando = true;
   definirCarregando(botao, true);
   try {
-    // O Firebase deixa o usuário autenticado após criar a conta.
     await cadastrar(nome, telefone, senha);
-    window.location.replace("home.html");
-  } catch (erro) {
-    mostrarMensagem("erro", mensagemDeErro(erro, "cadastro"));
-    enviando = false;
-    definirCarregando(botao, false);
+    window.location.href = "home.html"; // ou o fluxo de sucesso do seu projeto
+  } catch (error) {
+    console.error("Erro no cadastro:", error);
+  // Exibe a mensagem explicativa retornada do auth.js
+    exibirErro(error.message || "Não foi possível concluir o cadastro. Tente novamente.");
   }
 });
