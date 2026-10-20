@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="robots" content="noindex">
+  <title>Teste de Conexão Firebase</title>
+  <style>
+    body { font-family: monospace; background: #0f0f0f; color: #e0e0e0; padding: 24px; max-width: 760px; margin: 0 auto; }
+    h2 { color: #a78bfa; margin-bottom: 8px; }
+    .aviso { color: #888; font-size: 12px; margin-bottom: 20px; }
+    .step { margin-bottom: 16px; padding: 14px 18px; border-radius: 10px; background: #1a1a1a; border-left: 4px solid #333; }
+    .step.ok     { border-color: #22c55e; }
+    .step.erro   { border-color: #ef4444; }
+    .step.aguard { border-color: #f59e0b; }
+    .label { font-size: 12px; color: #888; margin-bottom: 6px; }
+    .msg   { font-size: 14px; word-break: break-word; }
+    .msg.ok     { color: #4ade80; }
+    .msg.erro   { color: #f87171; }
+    .msg.aguard { color: #fcd34d; }
+    label { display: block; font-size: 12px; color: #aaa; margin: 10px 0 4px; }
+    input { width: 100%; padding: 8px 10px; background: #111; color: #e0e0e0; border: 1px solid #333; border-radius: 6px; font-family: monospace; box-sizing: border-box; }
+    button {
+      margin: 20px 12px 0 0; padding: 14px 28px;
+      background: linear-gradient(135deg,#7c3aed,#db2777);
+      border: none; border-radius: 10px; color: #fff;
+      font-family: monospace; font-size: 14px; font-weight: 700; cursor: pointer;
+    }
+    button.sec { background: #333; }
+    button:disabled { opacity: .5; cursor: not-allowed; }
+    pre { background:#111; padding:12px; border-radius:8px; font-size:12px; overflow-x:auto; color:#a3e635; margin-top:8px; display:none; }
+  </style>
+</head>
+<body>
+  <h2>🔌 Diagnóstico Firebase</h2>
+  <p class="aviso">Página só para testes. Remova-a do repositório antes de publicar de verdade.
+    Precisa ser aberta por um servidor (http://localhost ou GitHub Pages), não por file://.</p>
+
+  <div class="step aguard" id="s1">
+    <div class="label">PASSO 1 · Configuração do projeto (js/firebase-config.js)</div>
+    <div class="msg aguard" id="m1">Aguardando...</div>
+    <pre id="p1"></pre>
+  </div>
+
+  <div class="step aguard" id="s2">
+    <div class="label">PASSO 2 · Authentication responde e E-mail/senha está ativado</div>
+    <div class="msg aguard" id="m2">Aguardando...</div>
+    <pre id="p2"></pre>
+  </div>
+
+  <div class="step aguard" id="s3">
+    <div class="label">PASSO 3 · Regras do Firestore bloqueiam acesso sem login (encerra a sessão atual deste navegador)</div>
+    <div class="msg aguard" id="m3">Aguardando...</div>
+    <pre id="p3"></pre>
+  </div>
+
+  <div class="step aguard" id="s4">
+    <div class="label">PASSO 4 · Login real com uma conta existente e leitura do próprio documento users/{uid}</div>
+    <label for="tel">Telefone</label>
+    <input id="tel" type="tel" autocomplete="off" placeholder="(11) 99999-9999">
+    <label for="pw">Senha (não é armazenada)</label>
+    <input id="pw" type="password" autocomplete="off">
+    <div class="msg aguard" id="m4" style="margin-top:10px">Aguardando...</div>
+    <pre id="p4"></pre>
+  </div>
+
+  <div class="step aguard" id="s5">
+    <div class="label">PASSO 5 (opcional) · Cadastro de teste completo: cria conta, grava users/{uid}, lê de volta e apaga a conta</div>
+    <div class="msg aguard" id="m5">Aguardando... Este passo cria um documento de teste que as regras impedem o app de apagar; remova-o depois no Console (Firestore &gt; users).</div>
+    <pre id="p5"></pre>
+  </div>
+
+  <button id="btn-rodar">▶ Rodar diagnóstico (passos 1–4)</button>
+  <button id="btn-cadastro" class="sec">＋ Rodar cadastro de teste (passo 5)</button>
+
+  <script type="module">
+    import { firebaseConfig } from "./js/firebase-config.js";
+    import { auth, db } from "./js/firebase-init.js";
+    import { normalizarTelefone, telefoneParaEmail } from "./js/phone.js";
+    import { entrar, cadastrar } from "./js/auth.js";
+    import { signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+    import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+    function set(id, cls, msg, pre) {
+      document.getElementById("s" + id).className = "step " + cls;
+      const m = document.getElementById("m" + id);
+      m.className = "msg " + cls;
+      m.textContent = msg;
+      if (pre !== undefined) {
+        const p = document.getElementById("p" + id);
+        p.style.display = "block";
+        p.textContent = typeof pre === "string" ? pre : JSON.stringify(pre, null, 2);
+      }
+    }
+
+    function detalheErro(e) {
+      return { code: e && e.code, message: e && e.message };
+    }
+
+    // PASSO 1 — configuração preenchida?
+    function passo1() {
+      const valores = Object.values(firebaseConfig).join(" ");
+      if (/COLE_AQUI|SEU-PROJETO/.test(valores)) {
+        set(1, "erro", "❌ js/firebase-config.js ainda tem valores de exemplo (COLE_AQUI / SEU-PROJETO).");
+        return false;
+      }
+      set(1, "ok", "✅ Configuração preenchida. Projeto: " + firebaseConfig.projectId,
+        { projectId: firebaseConfig.projectId, authDomain: firebaseConfig.authDomain });
+      return true;
+    }
+
+    // PASSO 2 — Auth acessível? (credenciais falsas: o erro "credencial inválida" é o resultado esperado)
+    async function passo2() {
+      try {
+        await signInWithEmailAndPassword(auth, "diagnostico-inexistente@phone.invalid", "senha-falsa-123456");
+        set(2, "aguard", "⚠️ Login inesperadamente aceito com credenciais de teste.");
+      } catch (e) {
+        const c = e && e.code;
+        if (["auth/invalid-credential", "auth/user-not-found", "auth/wrong-password", "auth/invalid-login-credentials"].includes(c)) {
+          set(2, "ok", "✅ Authentication respondeu e E-mail/senha está ativado (a recusa das credenciais falsas é o esperado).", detalheErro(e));
+        } else if (c === "auth/operation-not-allowed") {
+          set(2, "erro", "❌ E-mail/senha NÃO está ativado. Ative em Authentication > Método de login.", detalheErro(e));
+        } else if (c === "auth/api-key-not-valid.-please-pass-a-valid-api-key." || c === "auth/invalid-api-key") {
+          set(2, "erro", "❌ apiKey inválida. Confira js/firebase-config.js e as restrições da chave no Google Cloud.", detalheErro(e));
+        } else if (c === "auth/network-request-failed") {
+          set(2, "erro", "❌ Falha de rede ao falar com o Firebase.", detalheErro(e));
+        } else if (c === "auth/too-many-requests") {
+          set(2, "aguard", "⚠️ Firebase limitou as tentativas. Aguarde alguns minutos e rode de novo.", detalheErro(e));
+        } else {
+          set(2, "erro", "❌ Erro inesperado: " + (e && e.message), detalheErro(e));
+        }
+      }
+    }
+
+    // PASSO 3 — regras bloqueiam leitura anônima?
+    async function passo3() {
+      try {
+        await signOut(auth);
+        await getDoc(doc(db, "users", "diagnostico-sem-login"));
+        set(3, "erro", "❌ Leitura SEM login foi permitida: as regras estão abertas (modo de teste?). Publique o firestore.rules do projeto.");
+      } catch (e) {
+        const c = e && e.code;
+        if (c === "permission-denied") {
+          set(3, "ok", "✅ O Firestore recusou a leitura sem login (permission-denied). Regras ativas e restritivas.", detalheErro(e));
+        } else if (c === "unavailable") {
+          set(3, "erro", "❌ Firestore indisponível: verifique a internet e se o banco foi criado em Build > Firestore Database.", detalheErro(e));
+        } else {
+          set(3, "erro", "❌ Erro inesperado: " + (e && e.message), detalheErro(e));
+        }
+      }
+    }
+
+    // PASSO 4 — login real + leitura do próprio documento
+    async function passo4() {
+      const telBruto = document.getElementById("tel").value;
+      const senha = document.getElementById("pw").value;
+      if (!telBruto.trim() || !senha) {
+        set(4, "aguard", "⚠️ Preencha telefone e senha de uma conta já cadastrada para rodar este passo.");
+        return;
+      }
+      const tel = normalizarTelefone(telBruto);
+      if (!tel) { set(4, "erro", "❌ Telefone inválido."); return; }
+      try {
+        const usuario = await entrar(tel, senha);
+        try {
+          const snap = await getDoc(doc(db, "users", usuario.uid));
+          if (!snap.exists()) {
+            set(4, "aguard", "⚠️ Login OK, mas não existe documento users/" + usuario.uid + " (conta criada sem perfil?).", { uid: usuario.uid });
+          } else {
+            const d = snap.data();
+            if (d.createdAt && d.createdAt.toDate) d.createdAt = d.createdAt.toDate().toISOString();
+            set(4, "ok", "✅ LOGIN OK e documento lido. Telefone: " + d.phoneNumber, d);
+          }
+        } catch (e) {
+          set(4, "erro", "❌ Login OK, mas a leitura do documento falhou: " + (e && e.message), detalheErro(e));
+        }
+      } catch (e) {
+        const c = e && e.code;
+        const msg = c === "auth/too-many-requests"
+          ? "⚠️ Muitas tentativas; aguarde alguns minutos."
+          : "❌ Login falhou (telefone ou senha incorretos, ou conta inexistente).";
+        set(4, c === "auth/too-many-requests" ? "aguard" : "erro", msg, detalheErro(e));
+      }
+    }
+
+    async function rodar() {
+      const btn = document.getElementById("btn-rodar");
+      btn.disabled = true;
+      if (passo1()) {
+        await passo2();
+        await passo3();
+        await passo4();
+      } else {
+        for (const n of [2, 3, 4]) set(n, "aguard", "Aguardando o passo 1.");
+      }
+      btn.disabled = false;
+    }
+
+    // PASSO 5 — cadastro completo de teste
+    async function cadastroTeste() {
+      const btn = document.getElementById("btn-cadastro");
+      btn.disabled = true;
+      let uid = null;
+      try {
+        // Telefone aleatório de teste (DDD 11, celular).
+        const aleatorio = String(Math.floor(10000000 + Math.random() * 89999999));
+        const tel = "+55119" + aleatorio;
+        const senha = "Teste-" + Math.random().toString(36).slice(2, 12);
+        set(5, "aguard", "Criando conta de teste " + tel + " ...");
+
+        const usuario = await cadastrar("Teste Diagnóstico", tel, senha);
+        uid = usuario.uid;
+        const snap = await getDoc(doc(db, "users", uid));
+        if (!snap.exists()) throw new Error("Conta criada, mas o documento users/" + uid + " não foi encontrado.");
+        const d = snap.data();
+        if (d.createdAt && d.createdAt.toDate) d.createdAt = d.createdAt.toDate().toISOString();
+
+        await usuario.delete(); // remove a conta de teste do Authentication
+        set(5, "ok",
+          "✅ Cadastro completo funcionou (conta, documento e leitura). A conta de teste foi apagada do Authentication; " +
+          "apague manualmente o documento users/" + uid + " no Console do Firestore.", d);
+      } catch (e) {
+        const c = e && e.code;
+        let dica = "";
+        if (c === "auth/operation-not-allowed") dica = " (ative E-mail/senha no Authentication)";
+        if (c === "permission-denied") dica = " (as regras recusaram a gravação: confira se o firestore.rules do projeto está publicado)";
+        set(5, "erro", "❌ Falha no cadastro de teste: " + (e && e.message) + dica +
+          (uid ? " — conta " + uid + " pode ter ficado no Authentication." : ""), detalheErro(e));
+      }
+      btn.disabled = false;
+    }
+
+    document.getElementById("btn-rodar").addEventListener("click", rodar);
+    document.getElementById("btn-cadastro").addEventListener("click", cadastroTeste);
+  </script>
+</body>
+</html>

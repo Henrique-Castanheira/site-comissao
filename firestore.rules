@@ -29,9 +29,12 @@ service cloud.firestore {
       // data do servidor e WhatsApp desativado (sem consentimento presumido).
       allow create: if logado()
         && request.auth.uid == uid
-        && request.resource.data.keys().hasOnly(['uid', 'phoneNumber', 'createdAt', 'whatsappEnabled'])
-        && request.resource.data.keys().hasAll(['uid', 'phoneNumber', 'createdAt', 'whatsappEnabled'])
+        && request.resource.data.keys().hasOnly(['uid', 'name', 'phoneNumber', 'createdAt', 'whatsappEnabled'])
+        && request.resource.data.keys().hasAll(['uid', 'name', 'phoneNumber', 'createdAt', 'whatsappEnabled'])
         && request.resource.data.uid == uid
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 2
+        && request.resource.data.name.size() <= 80
         && request.resource.data.phoneNumber is string
         && request.resource.data.phoneNumber.matches('^\\+[1-9][0-9]{7,14}$')
         && telefoneConfere(request.resource.data.phoneNumber)
