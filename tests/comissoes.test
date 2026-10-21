@@ -1,0 +1,456 @@
+/**
+ * Testes das regras de RV — Terra Fibra, Outubro/2026.
+ * Executar na pasta do projeto:  node --test
+ *
+ * Valores esperados vêm EXCLUSIVAMENTE do PDF oficial. Os exemplos numéricos do
+ * documento estão marcados com [EXEMPLO PDF p.X]. Os demais casos (limites de
+ * faixa, entradas inválidas) são derivados passo a passo das tabelas do PDF.
+ */
+import test from "node:test";
+import assert from "node:assert/strict";
+import {
+  calcular,
+  aplicarGarantiaNovoColaborador,
+  percentualAceleradorQualidade,
+  selecionarFaixaPorValor,
+  lerNumero,
+  CATEGORIAS,
+  calcularComissaoPAP,
+  calcularComissaoLider,
+} from "../js/comissoes.js";
+
+const total = (cat, e) => calcular(cat, e).rvTotal;
+const base = (cat, e) => calcular(cat, e).rvBase;
+
+// ---------------------------------------------------------------------------
+test("[EXEMPLO PDF p.7] Consultor PAP: R$ 1.600 × 0,40 = 640 + 7% (índice 87%) = 44,80 → 684,80", () => {
+  const r = calcular("consultor_pap", { vendaInstalada: 1600, indiceQualidade: 87 });
+  assert.equal(r.ok, true);
+  assert.equal(r.rvBase, 640);
+  assert.equal(r.rvAcelerador, 44.8);
+  assert.equal(r.rvTotal, 684.8);
+  assert.equal(r.faixa.fator, 0.4);
+});
+
+test("[EXEMPLO PDF p.10] Consultor Call Center: R$ 2.500 × 0,75 = 1.875 + 5% (índice 82%) = 93,75 → 1.968,75", () => {
+  const r = calcular("consultor_callcenter", { vendaInstalada: 2500, indiceQualidade: 82 });
+  assert.equal(r.rvBase, 1875);
+  assert.equal(r.rvAcelerador, 93.75);
+  assert.equal(r.rvTotal, 1968.75);
+});
+
+test("[EXEMPLO PDF p.14] Consultor Digital: R$ 7.000 × 0,10 = 700 + 10% (índice 100%) = 70 → 770", () => {
+  const r = calcular("consultor_digital", { vendaInstalada: 7000, indiceQualidade: 100 });
+  assert.equal(r.rvBase, 700);
+  assert.equal(r.rvAcelerador, 70);
+  assert.equal(r.rvTotal, 770);
+});
+
+test("[EXEMPLO PDF p.5] Vendedor Loja: meta 2.000, venda 2.100 (105%) × 0,35 = 735 + 10% (93%) = 73,50 → 808,50", () => {
+  const r = calcular("vendedor_loja", { meta: 2000, realizado: 2100, indiceQualidade: 93 });
+  assert.equal(r.faixa.fator, 0.35);
+  assert.equal(r.rvBase, 735);
+  assert.equal(r.rvAcelerador, 73.5);
+  assert.equal(r.rvTotal, 808.5);
+  assert.equal(r.parcial, true, "Loja deve ser sinalizada como parcial");
+});
+
+test("[EXEMPLO PDF p.8] Líder PAP: meta 4.000, receita 8.000 (200%) → R$ 5.000 (sem teto)", () => {
+  assert.equal(total("lider_pap", { meta: 4000, realizado: 8000 }), 5000);
+});
+
+test("[EXEMPLO PDF p.11] Líder Call Center: meta 10.000, venda 18.000 (180%) → R$ 2.600 (teto 140%)", () => {
+  assert.equal(total("lider_callcenter", { meta: 10000, realizado: 18000 }), 2600);
+});
+
+test("[EXEMPLO PDF p.16] Líder Digital time: meta 350, venda 600 (171%) → R$ 2.600 (teto 140%)", () => {
+  assert.equal(total("lider_digital_time", { meta: 350, realizado: 600 }), 2600);
+});
+
+test("[EXEMPLO PDF p.12] Coordenador Call Center: meta 40.000, venda 40.000 (100%) × 0,06 = 2.400 + 10% (93%) = 240 → 2.640", () => {
+  const r = calcular("coordenador_callcenter", { meta: 40000, realizado: 40000, indiceQualidade: 93 });
+  assert.equal(r.rvBase, 2400);
+  assert.equal(r.rvAcelerador, 240);
+  assert.equal(r.rvTotal, 2640);
+});
+
+test("[EXEMPLO PDF p.18] Executivo de Vendas: meta 50.000, receita 45.000 (90%) × 6% → R$ 2.700", () => {
+  assert.equal(total("executivo_vendas", { meta: 50000, realizado: 45000 }), 2700);
+});
+
+test("[EXEMPLO PDF p.20] Gerente Regional: meta 70.000, receita 80.000 (114%) → R$ 3.000", () => {
+  assert.equal(total("gerente_regional", { meta: 70000, realizado: 80000 }), 3000);
+});
+
+test("[EXEMPLO PDF p.7] Garantia de R$ 300: RV de R$ 150 → recebe R$ 300", () => {
+  assert.equal(aplicarGarantiaNovoColaborador(150, 150), 300);
+  assert.equal(aplicarGarantiaNovoColaborador(300, 300), 300, "RV = 300 não é menor que 300");
+  assert.equal(aplicarGarantiaNovoColaborador(400, 400), 400);
+});
+
+// ---------------------------------------------------------------------------
+// Acelerador de qualidade (p.5, 7, 10, 12, 14): <=80 → 0; >80 → 5; >85 → 7; >90 → 10
+test("Acelerador de qualidade: limites exclusivos 80 / 85 / 90", () => {
+  const casos = [
+    [0, 0], [79.99, 0], [80, 0], [80.01, 5], [85, 5], [85.01, 7], [90, 7], [90.01, 10], [100, 10],
+  ];
+  for (const [indice, esperado] of casos) {
+    assert.equal(percentualAceleradorQualidade(indice), esperado, `índice ${indice}`);
+  }
+});
+
+test("Índice de qualidade: vazio ≠ zero; vazio não calcula acelerador e avisa", () => {
+  const vazio = calcular("consultor_pap", { vendaInstalada: 1600, indiceQualidade: "" });
+  assert.equal(vazio.ok, true);
+  assert.equal(vazio.rvAcelerador, 0);
+  assert.equal(vazio.rvTotal, 640);
+  assert.ok(vazio.avisos.some((a) => a.includes("Índice de Qualidade não informado")));
+
+  const zero = calcular("consultor_pap", { vendaInstalada: 1600, indiceQualidade: 0 });
+  assert.equal(zero.rvTotal, 640);
+  assert.ok(!zero.avisos.some((a) => a.includes("não informado")), "0 é valor informado");
+});
+
+test("Índice de qualidade inválido (negativo, > 100, texto) é rejeitado", () => {
+  for (const ruim of [-1, 100.01, "abc"]) {
+    const r = calcular("consultor_pap", { vendaInstalada: 1600, indiceQualidade: ruim });
+    assert.equal(r.ok, false, `índice ${ruim}`);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Faixas PAP / Call Center (p.7, p.10): 0 | 0,40 | 0,75 | 0,90 | 1,10
+test("PAP: limites das faixas por valor", () => {
+  const casos = [
+    [0, 0, 0],
+    [999, 0, 0],
+    [1000, 0.4, 400],
+    [2000, 0.4, 800],
+    [2001, 0.75, 1500.75],
+    [3000, 0.75, 2250],
+    [3001, 0.9, 2700.9],
+    [4000, 0.9, 3600],
+    [4001, 1.1, 4401.1],
+    [5000, 1.1, 5500],
+  ];
+  for (const [venda, fator, rv] of casos) {
+    const r = calcular("consultor_pap", { vendaInstalada: venda });
+    assert.equal(r.faixa.fator, fator, `fator para ${venda}`);
+    assert.equal(r.rvBase, rv, `RV base para ${venda}`);
+  }
+});
+
+test("Call Center tem as mesmas faixas do documento (p.10), com tabela própria", () => {
+  for (const venda of [999, 1000, 2001, 3001, 4001]) {
+    assert.equal(base("consultor_callcenter", { vendaInstalada: venda }), base("consultor_pap", { vendaInstalada: venda }));
+  }
+});
+
+test("PAP: valor num intervalo não coberto pelo PDF (ex.: R$ 2.000,50) gera aviso", () => {
+  const r = calcular("consultor_pap", { vendaInstalada: 2000.5 });
+  assert.equal(r.faixa.fator, 0.4, "aplica a faixa anterior");
+  assert.ok(r.avisos.some((a) => a.includes("não cobre")));
+  const ok = calcular("consultor_pap", { vendaInstalada: 2000 });
+  assert.equal(ok.avisos.length, 1, "só o aviso de índice não informado");
+});
+
+// Faixas Digital (p.14)
+test("Digital: limites das faixas", () => {
+  const casos = [
+    [0, 0],
+    [0.01, 0.1],
+    [6000, 0.1],
+    [6001, 0.1],
+    [7000, 0.1],
+    [7001, 0.11],
+    [8000, 0.11],
+    [8501, 0.12],
+    [9500, 0.12],
+    [9501, 0.13],
+    [12000, 0.13],
+    [12000.01, 0.15],
+    [20000, 0.15],
+  ];
+  for (const [venda, fator] of casos) {
+    assert.equal(calcular("consultor_digital", { vendaInstalada: venda }).faixa.fator, fator, `venda ${venda}`);
+  }
+});
+
+test("Digital: lacuna do PDF entre R$ 8.000 e R$ 8.501 gera aviso e usa a faixa anterior", () => {
+  const r = calcular("consultor_digital", { vendaInstalada: 8200 });
+  assert.equal(r.faixa.fator, 0.11);
+  assert.ok(r.avisos.some((a) => a.includes("não cobre")));
+});
+
+// Férias (p.7, p.10): gatilhos proporcionais
+test("Férias: gatilhos proporcionais aos dias trabalhados", () => {
+  // 15/30 → gatilho da faixa 2 passa de R$ 1.000 para R$ 500
+  const r = calcular("consultor_pap", { vendaInstalada: 500, diasTrabalhados: 15, diasPeriodo: 30 });
+  assert.equal(r.faixa.fator, 0.4);
+  assert.equal(r.rvBase, 200);
+  const sem = calcular("consultor_pap", { vendaInstalada: 500 });
+  assert.equal(sem.faixa.fator, 0);
+  // dias iguais = sem proporção
+  assert.equal(calcular("consultor_pap", { vendaInstalada: 500, diasTrabalhados: 30, diasPeriodo: 30 }).faixa.fator, 0);
+});
+
+test("Férias: entradas inconsistentes são rejeitadas", () => {
+  for (const e of [
+    { diasTrabalhados: 10 },
+    { diasPeriodo: 30 },
+    { diasTrabalhados: 31, diasPeriodo: 30 },
+    { diasTrabalhados: 0, diasPeriodo: 30 },
+    { diasTrabalhados: 10.5, diasPeriodo: 30 },
+  ]) {
+    assert.equal(calcular("consultor_pap", { vendaInstalada: 1000, ...e }).ok, false, JSON.stringify(e));
+  }
+  // Digital não prevê férias no PDF: os campos são ignorados
+  assert.equal(calcular("consultor_digital", { vendaInstalada: 7000, diasTrabalhados: 1, diasPeriodo: 30 }).faixa.fator, 0.1);
+});
+
+// Garantia (p.7) integrada
+test("Garantia PAP: só com a marcação; RV < R$ 300 → total R$ 300; RV ≥ R$ 300 não muda", () => {
+  const com = calcular("consultor_pap", { vendaInstalada: 500, novoColaborador: true });
+  assert.equal(com.rvBase, 0);
+  assert.equal(com.rvTotal, 300);
+  const sem = calcular("consultor_pap", { vendaInstalada: 500 });
+  assert.equal(sem.rvTotal, 0);
+  const acima = calcular("consultor_pap", { vendaInstalada: 1000, novoColaborador: true });
+  assert.equal(acima.rvTotal, 400, "RV de 400 já supera 300");
+  // Call Center não prevê a garantia
+  assert.equal(calcular("consultor_callcenter", { vendaInstalada: 500, novoColaborador: true }).rvTotal, 0);
+});
+
+// ---------------------------------------------------------------------------
+// Líderes
+test("Líder PAP (p.8): limites 79,99% / 80% / 99,99% / 100% / 104,99% / 105% e sem teto", () => {
+  const meta = 10000;
+  const casos = [
+    [7999, 0],
+    [8000, 600],
+    [9999, 600],
+    [10000, 1000],
+    [10499, 1000],
+    [10500, 1200],
+    [11000, 1400],
+    [14000, 2600], // 140% = 8 blocos × 200 + 1.000
+    [14499, 2600],
+    [14500, 2800], // 145% = 9 blocos: sem teto, continua subindo acima de 140%
+    [14999, 2800],
+    [15000, 3000], // 150% = 10 blocos
+    [20000, 5000], // 200% = 20 blocos (confere com o exemplo do PDF)
+  ];
+  for (const [real, esperado] of casos) {
+    assert.equal(total("lider_pap", { meta, realizado: real }), esperado, `realizado ${real}`);
+  }
+});
+
+test("Líder Call Center (p.11): mínimo de 85% e teto de 140%", () => {
+  const meta = 10000;
+  const casos = [
+    [8499, 0],
+    [8500, 600],
+    [9999, 600],
+    [10000, 1000],
+    [10500, 1200],
+    [14000, 2600],
+    [20000, 2600], // acima de 140% o adicional não cresce
+  ];
+  for (const [real, esperado] of casos) {
+    assert.equal(total("lider_callcenter", { meta, realizado: real }), esperado, `realizado ${real}`);
+  }
+});
+
+test("Líder Digital time (p.16): mínimo de 80% e teto de 140%", () => {
+  assert.equal(total("lider_digital_time", { meta: 100, realizado: 79 }), 0);
+  assert.equal(total("lider_digital_time", { meta: 100, realizado: 80 }), 600);
+  assert.equal(total("lider_digital_time", { meta: 100, realizado: 100 }), 1000);
+  assert.equal(total("lider_digital_time", { meta: 100, realizado: 140 }), 2600);
+  assert.equal(total("lider_digital_time", { meta: 100, realizado: 300 }), 2600);
+});
+
+test("Líder Digital próprias (p.15): meta R$ 2.100; degraus 80% / 100% / 120%", () => {
+  const casos = [
+    [1679.99, 0],
+    [1680, 800],
+    [2099.99, 800],
+    [2100, 1200],
+    [2519.99, 1200],
+    [2520, 1700],
+    [5000, 1700],
+  ];
+  for (const [real, esperado] of casos) {
+    assert.equal(total("lider_digital_proprias", { realizado: real }), esperado, `venda ${real}`);
+  }
+  // meta informada substitui a do documento
+  assert.equal(total("lider_digital_proprias", { meta: 1000, realizado: 1000 }), 1200);
+});
+
+test("Coordenador Call Center (p.12): faixas por atingimento", () => {
+  const meta = 10000;
+  const casos = [
+    [8499, 0],
+    [8500, 0.04],
+    [9999, 0.04],
+    [10000, 0.06],
+    [11000, 0.07],
+    [12000, 0.08],
+    [13000, 0.09],
+    [14000, 0.1],
+    [15000, 0.11],
+    [20000, 0.11],
+  ];
+  for (const [real, fator] of casos) {
+    const r = calcular("coordenador_callcenter", { meta, realizado: real });
+    assert.equal(r.faixa.fator, fator, `realizado ${real}`);
+  }
+});
+
+test("Executivo de Vendas (p.18): 0% / 5% / 6% / 7% sobre a receita", () => {
+  const meta = 10000;
+  const casos = [
+    [7999, 0],
+    [8000, 400],
+    [8999, 449.95],
+    [9000, 540],
+    [9999, 599.94],
+    [10000, 700],
+    [12000, 840],
+  ];
+  for (const [real, esperado] of casos) {
+    assert.equal(total("executivo_vendas", { meta, realizado: real }), esperado, `receita ${real}`);
+  }
+});
+
+test("Gerente Regional (p.20): faixas e avisos de ambiguidade", () => {
+  const meta = 10000;
+  assert.equal(total("gerente_regional", { meta, realizado: 7999 }), 0);
+  assert.equal(total("gerente_regional", { meta, realizado: 8000 }), 1000);
+  assert.equal(total("gerente_regional", { meta, realizado: 9000 }), 1000);
+  assert.equal(total("gerente_regional", { meta, realizado: 9100 }), 2000);
+  assert.equal(total("gerente_regional", { meta, realizado: 9999 }), 2000);
+  const cem = calcular("gerente_regional", { meta, realizado: 10000 });
+  assert.equal(cem.rvTotal, 3000);
+  assert.ok(cem.avisos.some((a) => a.includes("Exatamente 100%")));
+  const meio = calcular("gerente_regional", { meta, realizado: 9050 });
+  assert.equal(meio.rvTotal, 1000);
+  assert.ok(meio.avisos.some((a) => a.includes("Entre 90% e 91%")));
+});
+
+test("Vendedor Loja (p.5): faixas por atingimento (a faixa 1 paga 0,10)", () => {
+  const meta = 1000;
+  const casos = [
+    [0, 0.1], // faixa 1 (0% a 79,99%) paga 0,10 segundo o PDF; RV = 0 × 0,10 = 0
+    [799, 0.1],
+    [800, 0.2],
+    [999, 0.2],
+    [1000, 0.3],
+    [1049, 0.3],
+    [1050, 0.35],
+    [1100, 0.4],
+    [1150, 0.45],
+  ];
+  for (const [real, fator] of casos) {
+    assert.equal(calcular("vendedor_loja", { meta, realizado: real }).faixa.fator, fator, `venda ${real}`);
+  }
+});
+
+test("Casa Conectada (p.22): todos os fatores do PDF", () => {
+  const esperados = {
+    loja_consultor_negocio: 0.16,
+    loja_sub_gerente: 0.06,
+    loja_gerente_loja: 0.08,
+    loja_executivo_venda: 0.03,
+    loja_gerente_comercial: 0.02,
+    cc_digital_consultor: 0.2,
+    cc_digital_lider: 0.1,
+    cc_digital_coordenador: 0.05,
+    pap_consultor_i_ii: 0.16,
+    pap_consultor_ii_time: 0.09,
+    pap_lider: 0.05,
+    pap_executivo_venda: 0.03,
+    pap_gerente_comercial: 0.02,
+  };
+  for (const [cargo, fator] of Object.entries(esperados)) {
+    const r = calcular("casa_conectada", { cargo, vendaInstalada: 1000 });
+    assert.equal(r.ok, true, cargo);
+    assert.equal(r.faixa.fator, fator, cargo);
+    assert.equal(r.rvTotal, Math.round(1000 * fator * 100) / 100, cargo);
+  }
+  assert.equal(calcular("casa_conectada", { cargo: "inexistente", vendaInstalada: 1000 }).ok, false);
+  assert.equal(calcular("casa_conectada", { vendaInstalada: 1000 }).ok, false);
+});
+
+// ---------------------------------------------------------------------------
+// Entradas inválidas, ausentes e zero
+test("Entradas inválidas: negativo, texto, vazio, NaN, Infinity", () => {
+  for (const cat of CATEGORIAS.filter((c) => c.id !== "casa_conectada")) {
+    const campoObrigatorio = cat.campos.find((c) => c.obrigatorio);
+    for (const ruim of [-1, "abc", "", null, undefined, NaN, Infinity]) {
+      const r = calcular(cat.id, { meta: 1000, realizado: 1000, vendaInstalada: 1000, [campoObrigatorio.id]: ruim });
+      assert.equal(r.ok, false, `${cat.id} / ${campoObrigatorio.id} = ${String(ruim)}`);
+      assert.ok(r.erros.length > 0);
+    }
+  }
+});
+
+test("Meta zero ou ausente é rejeitada; venda/receita zero é válida e rende R$ 0,00", () => {
+  for (const cat of ["lider_pap", "lider_callcenter", "coordenador_callcenter", "executivo_vendas", "gerente_regional", "vendedor_loja"]) {
+    assert.equal(calcular(cat, { meta: 0, realizado: 100 }).ok, false, `${cat} meta 0`);
+    assert.equal(calcular(cat, { realizado: 100 }).ok, false, `${cat} sem meta`);
+    assert.equal(calcular(cat, { meta: 100 }).ok, false, `${cat} sem realizado`);
+  }
+  assert.equal(calcular("lider_pap", { meta: 1000, realizado: 0 }).rvTotal, 0);
+  assert.equal(calcular("consultor_pap", { vendaInstalada: 0 }).ok, true);
+  assert.equal(calcular("consultor_pap", { vendaInstalada: 0 }).rvTotal, 0);
+});
+
+test("Categoria inexistente e valores absurdos", () => {
+  assert.equal(calcular("nao_existe", {}).ok, false);
+  assert.equal(calcular("consultor_pap", { vendaInstalada: 1e12 }).ok, false);
+});
+
+test("Leitura de números: ponto, vírgula e milhar brasileiro", () => {
+  assert.equal(lerNumero("2500").valor, 2500);
+  assert.equal(lerNumero("2500.5").valor, 2500.5);
+  assert.equal(lerNumero("2.500,50").valor, 2500.5);
+  assert.equal(lerNumero("R$ 1.234,56").valor, 1234.56);
+  assert.ok(lerNumero("1e5").erro);
+  assert.ok(lerNumero("").erro);
+});
+
+test("Precisão: limites exatos não sofrem erro de ponto flutuante", () => {
+  // 0,29 × 100 = 28,999… em float; aqui 29% de 100.000 = 29.000 deve contar como 29%.
+  assert.equal(calcular("lider_pap", { meta: 100000, realizado: 80000 }).rvTotal, 600);
+  assert.equal(calcular("lider_pap", { meta: 7, realizado: 5.6 }).rvTotal, 600, "5,6/7 = exatamente 80%");
+  assert.equal(calcular("lider_pap", { meta: 7, realizado: 5.59 }).rvTotal, 0);
+  assert.equal(calcular("executivo_vendas", { meta: 3, realizado: 2.7 }).faixa.percentual, 6, "2,7/3 = exatamente 90%");
+  assert.equal(selecionarFaixaPorValor(100000, [{ de: 100000, ate: null, fator: 1 }]).faixa.fator, 1);
+});
+
+test("Arredondamento: componentes ao centavo, total = soma dos componentes", () => {
+  const r = calcular("consultor_pap", { vendaInstalada: 1234.56, indiceQualidade: 87 });
+  const soma = r.componentes.reduce((s, c) => s + Math.round(c.valor * 100), 0);
+  assert.equal(Math.round(r.rvTotal * 100), soma);
+  assert.equal(r.rvBase, 493.82); // 1.234,56 × 0,40 = 493,824
+  assert.equal(r.rvAcelerador, 34.57); // 7% × 493,824 = 34,56768
+  assert.equal(r.rvTotal, 528.39);
+});
+
+test("Compatibilidade: exports antigos continuam funcionando com as regras oficiais", () => {
+  assert.equal(calcularComissaoPAP(1600, true, 87).rvTotal, 684.8);
+  assert.equal(calcularComissaoPAP(1600).rvTotal, 640, "índice ausente não vira 100");
+  assert.equal(calcularComissaoLider(4000, 8000).rvTotal, 5000);
+  assert.equal(calcularComissaoLider(10000, 18000, "callcenter").rvTotal, 2600);
+});
+
+test("Todas as categorias do catálogo têm campos e calculam com entradas válidas", () => {
+  assert.equal(CATEGORIAS.length, 12);
+  const entradas = { vendaInstalada: 2500, meta: 4000, realizado: 4000, indiceQualidade: 90, cargo: "pap_lider" };
+  for (const cat of CATEGORIAS) {
+    assert.ok(cat.campos.length > 0 && cat.paginaPdf > 0, cat.id);
+    const r = calcular(cat.id, entradas);
+    assert.equal(r.ok, true, `${cat.id}: ${r.erros.join(" | ")}`);
+    assert.ok(r.memoria.length > 0);
+  }
+});
