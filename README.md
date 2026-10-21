@@ -1,6 +1,6 @@
 # 📡 Site Comissão Terra Fibra
 
-Aplicação web desenvolvida para autenticação de consultores e simulação/cálculo de **Remuneração Variável (RV)** com base nas regras comerciais do projeto Terra Fibra[cite: 6].
+Aplicação web desenvolvida para autenticação de consultores e simulação/cálculo de **Remuneração Variável (RV)** com base nas regras comerciais do projeto Terra Fibra.
 
 ---
 
@@ -12,12 +12,15 @@ Aplicação web desenvolvida para autenticação de consultores e simulação/c�
 * **Sessão protegida:** Validação de login em tempo real na página inicial (`home.html`) para evitar acessos não autorizados.
 
 ### 🧮 Simulador de Comissões (RV)
-* **Cálculo automatizado:** Simulação precisa de comissões para múltiplos canais e cargos[cite: 7]:
-  * Consultores PAP e Call Center (Faixas de ganho e Acelerador de Qualidade)[cite: 12, 15]
-  * Célula Digital / Online[cite: 19]
-  * Líderes de Equipe (PAP, Call Center e Digital)[cite: 13, 16, 21]
-  * Executivos de Vendas[cite: 23]
-* **Aceleradores de Desempenho:** Aplicação automática de bônus por Índice de Qualidade[cite: 10, 12, 15, 19].
+* **Regras oficiais de Outubro/2026** (PDF "RV Geral Terra Oficial", 23 páginas) implementadas em `js/comissoes.js`, uma função por categoria:
+  * Consultores PAP, Call Center e Digital (faixas + Acelerador de Qualidade)
+  * Vendedor Loja (parcial), Líderes (PAP, Call Center, Digital), Coordenador Call Center
+  * Executivo de Vendas e Gerente Regional
+  * Casa Conectada
+* **Interface dinâmica:** cada cargo mostra só os campos que precisa; resultado em R$ 1.234,56, com **memória de cálculo**, avisos e a página do PDF de origem.
+* **Estimativa não oficial.** Onde o PDF é ambíguo o simulador exibe um aviso. Detalhes em `docs/REGRAS_RV_OUTUBRO_2026.md`.
+* **Atualizar valores:** as regras são constantes no código; é preciso editar `js/comissoes.js` e publicar nova versão do site.
+* **Testes:** `node --test` (39 testes, com os exemplos do PDF).
 
 ### 🛡️ Gestão Administrativa
 * **Painel do Administrador (`admin.html`):** Portal para gerenciamento de contas registradas.
@@ -49,8 +52,16 @@ Aplicação web desenvolvida para autenticação de consultores e simulação/c�
     ├── firebase-init.js   # Inicialização dos serviços Firebase Auth e Firestore
     ├── auth.js            # Módulo de Autenticação (Login, Cadastro e Tratamento de Erros)
     ├── phone.js           # Utilitário de normalização de telefone
-    ├── comissoes.js       # Módulo contendo as regras e fórmulas de cálculo de RV
+    ├── comissoes.js       # Regras e fórmulas de RV (Outubro/2026), sem dependência de navegador/Firebase
     ├── login.js           # Lógica da interface de login
     ├── cadastro.js        # Lógica da interface de cadastro
     ├── home.js            # Lógica do painel principal e calculadora
     └── admin.js           # Lógica do painel de administração
+```
+
+Outros arquivos: `tests/comissoes.test.mjs` (testes automatizados), `docs/REGRAS_RV_OUTUBRO_2026.md` (regras × páginas do PDF, premissas e pontos em aberto).
+
+## 🌐 Publicação (GitHub Pages)
+1. Rode `node --test` e confirme que todos os testes passam.
+2. Faça commit dos arquivos alterados (`js/comissoes.js`, `js/home.js`, `home.html`, `tests/`, `docs/`, `package.json`, `README.md`) e `git push` na branch publicada.
+3. Em Settings > Pages, confirme a branch/pasta; aguarde o deploy e abra o site com Ctrl+Shift+R (cache dos módulos JS).

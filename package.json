@@ -1,0 +1,6 @@
+{
+  "name": "site-comissao-terra-fibra",
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node --test" }
+}

@@ -84,6 +84,35 @@
       border-radius: 8px;
       cursor: pointer;
     }
+
+    /* ---- Simulador dinâmico ---- */
+    select {
+      width: 100%;
+      padding: 11px 12px;
+      font: inherit;
+      color: inherit;
+      background: #fff;
+      border: 1px solid var(--cor-borda, #d1d5db);
+      border-radius: 8px;
+    }
+    .campo-checkbox { display: flex; gap: 10px; align-items: flex-start; }
+    .campo-checkbox input { width: auto; margin-top: 4px; }
+    .campo-checkbox label { margin: 0; font-weight: 400; }
+    .nota-simulador { font-size: 0.82rem; color: #6b7280; margin: 4px 0 0; }
+    .msg-preencher { color: #4b5563; font-size: 0.92rem; text-align: left; margin: 0; padding-left: 18px; }
+    .msg-preencher.erro { color: var(--cor-erro, #b91c1c); }
+    .lista-componentes { list-style: none; margin: 12px 0 0; padding: 0; text-align: left; font-size: 0.92rem; }
+    .lista-componentes li { display: flex; justify-content: space-between; gap: 12px; padding: 4px 0; border-bottom: 1px dashed #c7d2fe; }
+    .banner-parcial, .lista-avisos li {
+      background: #fffbeb; border: 1px solid #fcd34d; color: #92400e;
+      border-radius: 8px; padding: 8px 10px; font-size: 0.85rem; text-align: left;
+    }
+    .banner-parcial { font-weight: 600; margin-bottom: 10px; }
+    .lista-avisos { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+    .memoria { margin-top: 12px; text-align: left; font-size: 0.85rem; color: #4b5563; }
+    .memoria summary { cursor: pointer; font-weight: 600; }
+    .memoria ol { margin: 6px 0 0; padding-left: 20px; }
+    .fonte-simulador { margin-top: 10px; font-size: 0.78rem; color: #6b7280; text-align: left; }
   </style>
 </head>
 <body>
@@ -100,44 +129,29 @@
       </div>
     </main>
 
-    <!-- CALCULADORA DE COMISSÃO -->
-    <section class="painel-card">
-      <h2>Simulador de Comissões</h2>
-      
-      <div class="calc-box">
+    <!-- SIMULADOR DE COMISSÃO (campos montados por js/home.js a partir de js/comissoes.js) -->
+    <section class="painel-card" aria-labelledby="titulo-simulador">
+      <h2 id="titulo-simulador" style="margin-top:0;">Simulador de Comissões</h2>
+      <p class="nota-simulador">
+        Estimativa NÃO oficial, calculada com as regras do documento de Remuneração Variável de
+        Outubro/2026. O pagamento depende de os clientes estarem instalados e ativos na base.
+      </p>
+
+      <form id="form-simulador" class="calc-box" novalidate>
         <div class="campo">
           <label for="canal-vendas">Canal / Cargo</label>
-          <select id="canal-vendas" style="width:100%; padding:10px; border-radius:8px; border:1px solid #d1d5db;">
-            <option value="pap">Consultor PAP</option>
-            <option value="callcenter">Consultor Call Center</option>
-            <option value="digital">Consultor Digital</option>
-            <option value="lider">Líder (PAP / Call Center / Digital)</option>
-            <option value="executivo">Executivo de Vendas</option>
-          </select>
+          <select id="canal-vendas"></select>
         </div>
 
-        <div class="campo" id="box-venda-total">
-          <label for="venda-instalada">Venda Instalada no Mês (R$)</label>
-          <input type="number" id="venda-instalada" placeholder="Ex: 2500" value="2500">
-        </div>
+        <div id="campos-dinamicos" class="calc-box" style="margin-top:0;"></div>
 
-        <div class="campo" id="box-meta" style="display:none;">
-          <label for="meta-mes">Meta Estipulada (R$)</label>
-          <input type="number" id="meta-mes" placeholder="Ex: 4000" value="4000">
-        </div>
+        <button type="submit" id="btn-calcular" class="btn">Calcular Comissão</button>
+      </form>
 
-        <div class="campo" id="box-qualidade">
-          <label for="indice-qualidade">Índice de Qualidade (%)</label>
-          <input type="number" id="indice-qualidade" placeholder="Ex: 87" value="87">
-        </div>
-
-        <button type="button" id="btn-calcular" class="btn">Calcular Comissão</button>
-      </div>
-
-      <div class="resultado-simulacao" id="box-resultado">
-        <div style="font-size:0.9rem; color:#4b5563;">Comissão Estimada (RV Total)</div>
+      <div class="resultado-simulacao" id="box-resultado" aria-live="polite">
+        <div style="font-size:0.9rem; color:#4b5563;">Comissão estimada (RV total)</div>
         <div class="valor-destaque" id="rv-total-exibida">R$ 0,00</div>
-        <div id="detalhes-calculo" style="font-size:0.85rem; color:#6b7280; margin-top:6px;"></div>
+        <div id="detalhes-calculo"></div>
       </div>
     </section>
 
