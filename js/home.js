@@ -41,32 +41,32 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (canal === "pap" || canal === "callcenter") {
       res = calcularComissaoPAP(venda, ehNovo);
-      detalhe = `Você está no fator de comissão: ${(res.fator * 100).toFixed(0)}%[cite: 29]`;
+      detalhe = `Você está no fator de comissão: ${(res.fator * 100).toFixed(0)}%`;
 
       if (res.faltaParaProxima > 0) {
-        textoDica = `💡 <b>Fique atento!</b> Você está no fator <b>${res.fator}</b>[cite: 29]. Faltam apenas <b>R$ ${res.faltaParaProxima.toFixed(2)}</b> em vendas para você mudar de fator[cite: 29] e subir sua comissão para <b>R$ ${res.ganhoEstimadoProxima.toFixed(2)}</b>![cite: 29]`;
-        msgZap = `Aviso de comissão: Você está no fator de comissão ${res.fator}! Faltam apenas R$ ${res.faltaParaProxima.toFixed(2)} para você mudar de faixa! Vamos pra cima! 🚀[cite: 29]`;
+        textoDica = `💡 <b>Fique atento!</b> Você está no fator <b>${res.fator}</b>. Faltam apenas <b>R$ ${res.faltaParaProxima.toFixed(2)}</b> em vendas para você mudar de fator e subir sua comissão para <b>R$ ${res.ganhoEstimadoProxima.toFixed(2)}</b>!`;
+        msgZap = `Aviso de comissão: Você está no fator de comissão ${res.fator}! Faltam apenas R$ ${res.faltaParaProxima.toFixed(2)} para você mudar de faixa! Vamos pra cima! 🚀`;
       }
     } else if (canal === "digital") {
       res = calcularComissaoDigital(venda, ehNovo);
-      detalhe = `Fator atual: ${(res.fator * 100).toFixed(0)}%[cite: 29]`;
+      detalhe = `Fator atual: ${(res.fator * 100).toFixed(0)}%`;
 
       if (res.faltaParaProxima > 0) {
-        textoDica = `💡 Faltam <b>R$ ${res.faltaParaProxima.toFixed(2)}</b> para você atingir a próxima faixa de comissão![cite: 29]`;
-        msgZap = `Você está quase lá! Faltam apenas R$ ${res.faltaParaProxima.toFixed(2)} para subir a comissão do seu canal digital![cite: 29]`;
+        textoDica = `💡 Faltam <b>R$ ${res.faltaParaProxima.toFixed(2)}</b> para você atingir a próxima faixa de comissão!`;
+        msgZap = `Você está quase lá! Faltam apenas R$ ${res.faltaParaProxima.toFixed(2)} para subir a comissão do seu canal digital!`;
       }
     } else if (canal === "lider" || canal === "executivo") {
       res = canal === "lider" ? calcularComissaoLider(meta, venda) : calcularComissaoExecutivo(meta, venda);
-      detalhe = `Atingimento da Meta: ${res.pctAtingimento.toFixed(1)}%[cite: 13, 16, 23]`;
+      detalhe = `Atingimento da Meta: ${res.pctAtingimento.toFixed(1)}%`;
 
       if (res.faltaMeta > 0) {
         textoDica = `🔥 Faltam <b>R$ ${res.faltaMeta.toFixed(2)}</b> em vendas para alcançar 100% da meta!`;
-        msgZap = `Atenção: Faltam apenas R$ ${res.faltaMeta.toFixed(2)} de vendas para bater 100% da meta![cite: 29]`;
+        msgZap = `Atenção: Faltam apenas R$ ${res.faltaMeta.toFixed(2)} de vendas para bater 100% da meta!`;
       }
     }
 
     if (res.aplicouPiso) {
-      detalhe += " (Garantido o piso de R$ 300,00 para novos colaboradores)[cite: 12]";
+      detalhe += " (Garantido o piso de R$ 300,00 para novos colaboradores)";
     }
 
     rvTotalExibida.textContent = res.rvTotal.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
