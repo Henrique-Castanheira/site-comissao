@@ -1,69 +1,85 @@
 import { entrar } from "./auth.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
-  const form = document.querySelector("form") || document.getElementById("form-login");
-  const btnSubmit = document.querySelector('button[type="submit"]') || document.getElementById("btn-entrar");
-  
-  const telInput = document.getElementById("telefone") || document.getElementById("tel") || document.querySelector('input[type="tel"]') || document.querySelectorAll("input")[0];
-  const senhaInput = document.getElementById("senha") || document.querySelector('input[type="password"]');
+  const form = document.getElementById("form-login");
+  const telInput = document.getElementById("telefone");
+  const senhaInput = document.getElementById("senha");
+  const btnEntrar = document.getElementById("btn-entrar");
+  const btnTexto = btnEntrar ? btnEntrar.querySelector(".btn-texto") : null;
+  const spinner = btnEntrar ? btnEntrar.querySelector(".spinner") : null;
+  const mensagemBox = document.getElementById("mensagem");
 
-  // Função para exibir mensagem na caixa de erro
-  function mostrarErro(mensagem) {
-    let boxErro = document.querySelector(".alerta.erro") || document.querySelector(".alert-danger") || document.querySelector('[class*="erro"]');
-    if (!boxErro && form) {
-      boxErro = document.createElement("div");
-      boxErro.className = "alerta erro";
-      form.prepend(boxErro);
-    }
-    if (boxErro) {
-      boxErro.textContent = mensagem;
-      boxErro.style.display = "block";
+  // Oculta a mensagem de erro
+  function limparMensagem() {
+    if (mensagemBox) {
+      mensagemBox.hidden = true;
+      mensagemBox.textContent = "";
+      mensagemBox.className = "alerta";
     }
   }
 
-  function limparErro() {
-    const boxErro = document.querySelector(".alerta.erro") || document.querySelector(".alert-danger") || document.querySelector('[class*="erro"]');
-    if (boxErro) {
-      boxErro.style.display = "none";
-      boxErro.textContent = "";
+  // Exibe mensagem na div #mensagem do HTML
+  function exibirMensagem(texto, tipo = "erro") {
+    if (mensagemBox) {
+      mensagemBox.textContent = texto;
+      mensagemBox.className = `alerta ${tipo}`;
+      mensagemBox.hidden = false;
     }
   }
 
-  // Função genérica de Login
-  async function executarLogin(telefone, senha) {
-    limparErro();
+  // Controla o estado visual de carregamento do botão
+  function setCarregando(carregando) {
+    if (btnEntrar) btnEntrar.disabled = carregando;
+    if (spinner) spinner.hidden = !carregando;
+    if (btnTexto) btnTexto.style.display = carregando ? "none" : "inline";
+  }
+
+  // Executa o processo de autenticação
+  async function realizarLogin(telefone, senha) {
+    limparMensagem();
+
+    if (!telefone) {
+      exibirMensagem("Por favor, informe o seu número de telefone.");
+      return;
+    }
+
+    if (!senha) {
+      exibirMensagem("Por favor, informe a sua senha.");
+      return;
+    }
+
     try {
-      if (btnSubmit) btnSubmit.disabled = true;
+      setCarregando(true);
 
-      // Chama a função de autenticação do Firebase
+      // Tenta autenticar no Firebase com os dados
       await entrar(telefone, senha);
 
-      // Sucesso: Redireciona para a página home.html
+      // Redireciona para a home em caso de sucesso
       window.location.href = "home.html";
     } catch (error) {
-      console.error("Erro ao fazer login:", error);
-      mostrarErro(error.message || "Erro ao fazer login. Verifique o telefone e a senha.");
+      console.error("Erro na tentativa de login:", error);
+      exibirMensagem(error.message || "Não foi possível realizar o login. Verifique seus dados.");
     } finally {
-      if (btnSubmit) btnSubmit.disabled = false;
+      setCarregando(false);
     }
   }
 
-  // 1. VERIFICA PARÂMETROS NA URL (?telefone=...&senha=...)
+  // 1. PROCESSAR PARÂMETROS DA URL (?telefone=...&senha=...)
   const urlParams = new URLSearchParams(window.location.search);
-  const telUrl = urlParams.get("telefone") || urlParams.get("tel");
+  const telefoneUrl = urlParams.get("telefone") || urlParams.get("tel");
   const senhaUrl = urlParams.get("senha") || urlParams.get("pw");
 
-  if (telUrl) {
-    if (telInput) telInput.value = telUrl;
+  if (telefoneUrl && telInput) {
+    telInput.value = telefoneUrl;
   }
 
-  if (senhaUrl) {
-    if (senhaInput) senhaInput.value = senhaUrl;
+  if (senhaUrl && senhaInput) {
+    senhaInput.value = senhaUrl;
   }
 
-  // Se ambos vierem na URL, executa o login automático
-  if (telUrl && senhaUrl) {
-    await executarLogin(telUrl, senhaUrl);
+  // Se ambos vierem no link, executa o login automático imediatamente
+  if (telefoneUrl && senhaUrl) {
+    await realizarLogin(telefoneUrl, senhaUrl);
   }
 
   // 2. SUBMISSÃO MANUAL DO FORMULÁRIO
@@ -74,17 +90,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const telefone = telInput ? telInput.value.trim() : "";
       const senha = senhaInput ? senhaInput.value : "";
 
-      if (!telefone) {
-        mostrarErro("Por favor, digite o número de telefone.");
-        return;
-      }
-
-      if (!senha) {
-        mostrarErro("Por favor, digite a sua senha.");
-        return;
-      }
-
-      await executarLogin(telefone, senha);
+      await realizarLogin(telefone, senha);
     });
   }
 });
