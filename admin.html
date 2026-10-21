@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Painel Administrativo</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    body {
+      display: block;
+      padding: 20px;
+      max-width: 900px;
+      margin: 0 auto;
+      background: var(--cor-fundo, #f3f4f6);
+    }
+
+    /* Tela de Login Admin */
+    #secao-login {
+      max-width: 380px;
+      margin: 80px auto;
+    }
+
+    /* Painel do Admin */
+    #secao-admin {
+      background: #fff;
+      padding: 24px;
+      border-radius: var(--raio, 12px);
+      border: 1px solid var(--cor-borda, #d1d5db);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    }
+
+    .admin-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+      border-bottom: 1px solid var(--cor-borda, #d1d5db);
+      padding-bottom: 16px;
+    }
+
+    .tabela-container {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid var(--cor-borda, #e5e7eb);
+    }
+
+    th {
+      background-color: var(--cor-fundo, #f9fafb);
+      font-weight: 600;
+    }
+
+    input.edit-input {
+      width: 100%;
+      padding: 6px 8px;
+      font-size: 0.85rem;
+    }
+
+    .acoes-td {
+      display: flex;
+      gap: 6px;
+    }
+
+    .btn-acao {
+      padding: 6px 10px;
+      font-size: 0.8rem;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .btn-salvar { background: var(--cor-primaria, #2563eb); color: #fff; }
+    .btn-deletar { background: var(--cor-erro, #b91c1c); color: #fff; }
+    .btn-sair-admin { background: #6b7280; color: #fff; }
+  </style>
+</head>
+<body>
+
+  <!-- TELA 1: LOGIN DO ADMIN -->
+  <section id="secao-login" class="card">
+    <h1>Login Admin</h1>
+    <div id="mensagem-login" class="alerta erro" hidden></div>
+    
+    <form id="form-login-admin">
+      <div class="campo">
+        <label for="admin-user">Usuário</label>
+        <input type="text" id="admin-user" required autocomplete="username">
+      </div>
+      <div class="campo">
+        <label for="admin-pass">Senha</label>
+        <input type="password" id="admin-pass" required autocomplete="current-password">
+      </div>
+      <button type="submit" class="btn">Acessar Painel</button>
+    </form>
+  </section>
+
+  <!-- TELA 2: GERENCIAMENTO DE USUÁRIOS -->
+  <section id="secao-admin" hidden>
+    <div class="admin-header">
+      <h2>Painel de Controle — Usuários</h2>
+      <button id="btn-sair-admin" class="btn-acao btn-sair-admin">Sair</button>
+    </div>
+
+    <div id="mensagem-admin" class="alerta" hidden></div>
+
+    <div class="tabela-container">
+      <table>
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Telefone</th>
+            <th>Nova Senha (opcional)</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tabela-usuarios">
+          <tr>
+            <td colspan="4" style="text-align: center;">Carregando usuários...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <script type="module" src="js/admin.js"></script>
+</body>
+</html>
