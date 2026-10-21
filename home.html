@@ -4,58 +4,147 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
-  <title>Início</title>
+  <title>Painel - Início</title>
+  <link rel="stylesheet" href="css/style.css">
   <style>
-    /* Fica oculta até a sessão ser validada (evita "piscar" antes do redirecionamento). */
-    html, body { margin: 0; min-height: 100%; background: #f4f5f7; }
+    /* Fica oculto até validar a sessão para evitar piscada de tela */
+    html, body { margin: 0; min-height: 100vh; background: var(--cor-fundo, #f3f4f6); }
     body {
       visibility: hidden;
       display: flex;
       align-items: center;
       justify-content: center;
-      min-height: 100vh;
       padding: 16px;
       box-sizing: border-box;
       font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-      color: #1f2328;
+      color: var(--cor-texto, #111827);
     }
     body.autenticado { visibility: visible; }
-    .home {
+
+    .painel-card {
       width: 100%;
-      max-width: 420px;
+      max-width: 440px;
+      background: var(--cor-superficie, #ffffff);
+      border: 1px solid var(--cor-borda, #d1d5db);
+      border-radius: 12px;
       padding: 32px 28px;
-      background: #fff;
-      border: 1px solid #d0d5dd;
-      border-radius: 10px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
       text-align: center;
     }
-    h1 { margin: 0 0 8px; font-size: 1.5rem; font-weight: 600; }
-    .info { margin: 0 0 20px; color: #5b6470; }
-    .mensagem { margin: 0; line-height: 1.5; }
-        .btn-sair {
-      margin-top: 24px;
-      padding: 10px 24px;
+
+    .painel-header {
+      margin-bottom: 20px;
+    }
+
+    .painel-header h1 {
+      margin: 0 0 6px;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--cor-texto, #111827);
+    }
+
+    .subtitulo {
+      margin: 0;
+      font-size: 0.9rem;
+      color: var(--cor-texto-suave, #6b7280);
+    }
+
+    /* Caixa com os detalhes do usuário */
+    .usuario-detalhes {
+      background-color: var(--cor-fundo, #f9fafb);
+      border: 1px solid var(--cor-borda, #e5e7eb);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+      text-align: left;
+    }
+
+    .item-detalhe {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0;
+      font-size: 0.9rem;
+      border-bottom: 1px dashed var(--cor-borda, #e5e7eb);
+    }
+
+    .item-detalhe:last-child {
+      border-bottom: none;
+    }
+
+    .label {
+      font-weight: 600;
+      color: var(--cor-texto-suave, #4b5563);
+    }
+
+    .valor {
+      color: var(--cor-texto, #111827);
+      font-weight: 500;
+    }
+
+    .mensagem-painel {
+      margin: 0 0 20px;
+      font-size: 0.92rem;
+      line-height: 1.5;
+      color: var(--cor-texto-suave, #4b5563);
+      background-color: var(--cor-fundo-input-ativo, #eef2ff);
+      border: 1px solid var(--cor-borda-foco, #c7d2fe);
+      padding: 12px;
+      border-radius: 8px;
+    }
+
+    .btn-sair {
+      width: 100%;
+      padding: 11px 16px;
       font: inherit;
       font-weight: 600;
-      color: #1f2328;
-      background: #fff;
-      border: 1px solid #d0d5dd;
+      color: var(--cor-erro, #b91c1c);
+      background: var(--cor-erro-fundo, #fef2f2);
+      border: 1px solid var(--cor-erro-borda, #fca5a5);
       border-radius: 8px;
       cursor: pointer;
+      transition: background-color 0.2s, color 0.2s;
     }
-    .btn-sair:hover { background: #f4f5f7; }
-    .btn-sair:focus-visible { outline: 3px solid rgba(47, 95, 208, 0.35); outline-offset: 2px; }
-    .btn-sair:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .btn-sair:hover {
+      background: var(--cor-erro, #b91c1c);
+      color: #ffffff;
+    }
+
+    .btn-sair:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
   </style>
 </head>
 <body>
-  <main class="home">
-    <h1 id="saudacao"></h1>
-    <p class="info">Telefone: <span id="numero-usuario"></span></p>
-    <p class="mensagem" id="mensagem-home">
-      Seu acesso está ativo. Novas funcionalidades serão adicionadas em breve.
-    </p>
-    <button type="button" id="btn-sair" class="btn-sair">Sair</button>
+  <main class="painel-card">
+    <div class="painel-header">
+      <h1 id="saudacao">Olá!</h1>
+      <p class="subtitulo">Bem-vindo ao seu painel de controle</p>
+    </div>
+
+    <!-- Seção de informações do Usuário -->
+    <div class="usuario-detalhes">
+      <div class="item-detalhe">
+        <span class="label">Nome:</span>
+        <span class="valor" id="nome-usuario">Carregando...</span>
+      </div>
+      <div class="item-detalhe">
+        <span class="label">Telefone:</span>
+        <span class="valor" id="numero-usuario">Carregando...</span>
+      </div>
+      <div class="item-detalhe">
+        <span class="label">Cadastrado em:</span>
+        <span class="valor" id="data-cadastro">--/--/----</span>
+      </div>
+    </div>
+
+    <div class="mensagem-painel" id="mensagem-home">
+      👋 Seu acesso está ativo com sucesso! Novas funcionalidades e métricas serão adicionadas em breve.
+    </div>
+
+    <button type="button" id="btn-sair" class="btn-sair">Sair da Conta</button>
   </main>
 
   <script type="module" src="js/home.js"></script>
